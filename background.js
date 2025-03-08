@@ -1,17 +1,19 @@
+import { TitleRule } from './models.js';
+
 // 存储规则列表
 let rules = [];
 
 // 从存储中加载规则
 chrome.storage.sync.get('titleRules', (data) => {
   if (data.titleRules) {
-    rules = data.titleRules;
+    rules = data.titleRules.map(rule => TitleRule.fromJSON(rule));
   }
 });
 
 // 监听存储变化
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'sync' && changes.titleRules) {
-    rules = changes.titleRules.newValue;
+    rules = changes.titleRules.newValue.map(rule => TitleRule.fromJSON(rule));
   }
 });
 
@@ -33,7 +35,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.log('从存储中加载规则:', data.titleRules);
 
       if (data.titleRules) {
-        rules = data.titleRules;
+        rules = data.titleRules.map(rule => TitleRule.fromJSON(rule));
 
         try {
           // 对所有打开的标签页重新应用规则
@@ -83,7 +85,7 @@ async function applyRules(tabId, tab) {
 
     // 过滤出当前域名的启用规则
     const domainRules = rules
-      .filter(rule => validateRule(rule))
+      .filter(rule => rule.validate())
       .filter(rule => rule.enabled && rule.domain === domain);
 
     if (domainRules.length > 0) {
