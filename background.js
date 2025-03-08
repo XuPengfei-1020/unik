@@ -269,14 +269,6 @@ async function applyRule(rule, tabId) {
         await chrome.scripting.executeScript({
           target: { tabId },
           func: (newTitle) => {
-            // 设置定时器确保标题不被其他脚本修改
-            window._titleTimer = setInterval(() => {
-              if (document.title !== newTitle) {
-                document.title = newTitle;
-              }
-            }, 1000);
-
-            // 立即设置一次
             document.title = newTitle;
           },
           args: [applyRules.fixedTitle]
@@ -296,42 +288,27 @@ async function applyRule(rule, tabId) {
 
               // 执行用户的脚本
               const userFunc = (0, eval)(script);
-              const result = userFunc(title);
 
-              // 如果返回的是函数，就用于定时更新
-              if (typeof result === 'function') {
-                const updateTitle = result;  // 保存函数引用
-
-                window._titleTimer = setInterval(() => {
-                  try {
-                    const newTitle = updateTitle(title);
-                    if (typeof newTitle === 'string') {
-                      document.title = newTitle;
-                    }
-                  } catch (e) {
-                    console.error('更新标题错误:', e);
-                    if (window._titleTimer) {
-                      clearInterval(window._titleTimer);
-                      window._titleTimer = null;
-                    }
+              // 设置定时器每秒执行一次用户脚本
+              window._titleTimer = setInterval(() => {
+                try {
+                  const newTitle = userFunc(title);
+                  if (typeof newTitle === 'string') {
+                    document.title = newTitle;
                   }
-                }, 1000);
-
-                // 立即执行一次
-                const initialTitle = updateTitle(title);
-                if (typeof initialTitle === 'string') {
-                  document.title = initialTitle;
+                } catch (e) {
+                  console.error('更新标题错误:', e);
+                  if (window._titleTimer) {
+                    clearInterval(window._titleTimer);
+                    window._titleTimer = null;
+                  }
                 }
-              } else if (typeof result === 'string') {
-                // 如果直接返回字符串，就直接使用
-                document.title = result;
+              }, 1000);
 
-                // 设置定时器确保标题不被其他脚本修改
-                window._titleTimer = setInterval(() => {
-                  if (document.title !== result) {
-                    document.title = result;
-                  }
-                }, 1000);
+              // 立即执行一次
+              const initialTitle = userFunc(title);
+              if (typeof initialTitle === 'string') {
+                document.title = initialTitle;
               }
             } catch (e) {
               console.error('执行脚本错误:', e);
