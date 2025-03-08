@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>标题规则管理</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>标题规则管理</h1>
+      <div class="header-actions">
+        <button id="import-rules" class="btn-icon">
+          <svg viewBox="0 0 24 24">
+            <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+          </svg>
+          导入规则
+        </button>
+        <button id="export-rules" class="btn-icon">
+          <svg viewBox="0 0 24 24">
+            <path fill="currentColor" d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM18 20H6V4h7v5h5v11zM8 15.01l1.41 1.41L11 14.84V19h2v-4.16l1.59 1.59L16 15.01 12.01 11z"/>
+          </svg>
+          导出规则
+        </button>
+      </div>
+    </header>
+
+    <div class="rules-container">
+      <div class="rules-sidebar">
+        <div class="search-box">
+          <input type="text" id="search-rules" placeholder="搜索规则...">
+        </div>
+        <div class="domain-list" id="domain-list">
+          <!-- 域名列表将通过 JavaScript 动态生成 -->
+        </div>
+      </div>
+
+      <div class="rules-content">
+        <div class="rules-header">
+          <h2 id="current-domain">所有规则</h2>
+          <button id="add-rule" class="btn-icon">
+            <svg viewBox="0 0 24 24">
+              <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+            添加规则
+          </button>
+        </div>
+        <div class="rules-list" id="rules-list">
+          <!-- 规则列表将通过 JavaScript 动态生成 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 规则编辑对话框 -->
+  <dialog id="rule-dialog">
+    <form id="rule-form">
+      <h3>编辑规则</h3>
+
+      <div class="form-group">
+        <label for="rule-domain">域名:</label>
+        <input type="text" id="rule-domain" required>
+      </div>
+
+      <div class="form-group">
+        <label for="rule-tags">标签:</label>
+        <input type="text" id="rule-tags" placeholder="用逗号分隔多个标签">
+      </div>
+
+      <fieldset>
+        <legend>匹配规则</legend>
+        <div class="form-group">
+          <label for="title-pattern">标题匹配:</label>
+          <div class="pattern-input-wrapper">
+            <input type="text" id="title-pattern" class="pattern-input">
+            <input type="hidden" id="title-options" value="{}">
+            <div class="pattern-options">
+              <button type="button" class="pattern-option" data-option="case" data-for="title">
+                <span class="tooltip">大小写敏感</span>
+                Aa
+              </button>
+              <button type="button" class="pattern-option" data-option="word" data-for="title">
+                <span class="tooltip">完整匹配</span>
+                <span class="word-match-icon">ab</span>
+              </button>
+              <button type="button" class="pattern-option" data-option="regex" data-for="title">
+                <span class="tooltip">正则表达式</span>
+                .*
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="url-pattern">URL匹配:</label>
+          <div class="pattern-input-wrapper">
+            <input type="text" id="url-pattern" class="pattern-input">
+            <input type="hidden" id="url-options" value="{}">
+            <div class="pattern-options">
+              <button type="button" class="pattern-option" data-option="case" data-for="url">
+                <span class="tooltip">大小写敏感</span>
+                Aa
+              </button>
+              <button type="button" class="pattern-option" data-option="word" data-for="url">
+                <span class="tooltip">完整匹配</span>
+                <span class="word-match-icon">ab</span>
+              </button>
+              <button type="button" class="pattern-option" data-option="regex" data-for="url">
+                <span class="tooltip">正则表达式</span>
+                .*
+              </button>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>应用规则</legend>
+        <div class="form-group">
+          <label>
+            <input type="radio" name="title-type" value="fixed" checked>
+            固定标题
+          </label>
+          <input type="text" id="fixed-title">
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="radio" name="title-type" value="script">
+            自定义脚本
+          </label>
+          <div class="script-input">
+            <textarea id="title-script" placeholder="// 示例：显示当前时间
+return function() {
+  const utils = window.titleUpdater.utils;
+  return `[${utils.getTime()}] ${utils.getOriginalTitle()}`;
+}
+
+// 可用的工具函数：
+// utils.getOriginalTitle() - 获取原始标题
+// utils.getTime() - 获取当前时间
+// utils.getDate() - 获取当前日期
+// utils.getSeconds() - 获取页面停留秒数
+// utils.getMinutes() - 获取页面停留分钟
+// utils.getHours() - 获取页面停留小时
+// utils.select(selector) - 查询单个元素
+// utils.selectAll(selector) - 查询多个元素
+// utils.getText(selector) - 获取元素文本
+// utils.getVideoProgress() - 获取视频播放进度"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="dialog-buttons">
+        <button type="submit">保存</button>
+        <button type="button" id="cancel-edit">取消</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="options.js"></script>
+</body>
+</html>
