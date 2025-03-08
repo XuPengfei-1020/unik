@@ -227,7 +227,7 @@ function matchesPattern(text, pattern) {
 }
 
 // 应用单个规则
-function applyRule(rule, tabId) {
+async function applyRule(rule, tabId) {
   const { applyRules } = rule;
   console.log('开始应用规则:', rule);
 
@@ -239,78 +239,110 @@ function applyRule(rule, tabId) {
     }
 
     try {
-      // 先清除所有可能的定时器和脚本，并等待清理完成
-      console.log('清理旧的定时器和脚本...');
-      const cleanupResult = await chrome.scripting.executeScript({
-        target: { tabId: tabId },
+      // 注入核心更新逻辑并获取原始标题
+      const [titleResult] = await chrome.scripting.executeScript({
+        target: { tabId },
         func: () => {
-          console.log('[Title Updater] 开始清理...');
-
-          // 清除定时器
+          // 清理旧的定时器和数据
           if (window._titleTimer) {
-            console.log('[Title Updater] 清除旧的定时器');
             clearInterval(window._titleTimer);
             window._titleTimer = null;
           }
 
-          // 移除旧的脚本
-          const oldScript = document.querySelector('script[data-title-updater]');
-          if (oldScript) {
-            console.log('[Title Updater] 移除旧的脚本');
-            oldScript.remove();
+          // 保存原始标题
+          if (!document.querySelector('meta[name="original-title"]')) {
+            const metaTag = document.createElement('meta');
+            metaTag.setAttribute('name', 'original-title');
+            metaTag.setAttribute('content', document.title);
+            document.head.appendChild(metaTag);
           }
 
-          return new Promise((resolve) => {
-            setTimeout(() => {
-              console.log('[Title Updater] 清理完成');
-              resolve(true);
-            }, 100);
-          });
+          // 获取原始标题
+          return document.querySelector('meta[name="original-title"]')?.content || document.title;
         }
       });
-      console.log('清理结果:', cleanupResult);
+
+      const originalTitle = titleResult.result;
 
       if (applyRules.fixedTitle) {
-        console.log('应用固定标题:', applyRules.fixedTitle);
         // 应用固定标题
-        const result = await chrome.scripting.executeScript({
-          target: { tabId: tabId },
+        await chrome.scripting.executeScript({
+          target: { tabId },
           func: (newTitle) => {
-            console.log('[Title Updater] 应用固定标题:', newTitle);
-            return new Promise((resolve) => {
-              try {
-                // 确保没有活跃的定时器
-                if (window._titleTimer) {
-                  console.log('[Title Updater] 清除已存在的定时器');
-                  clearInterval(window._titleTimer);
-                  window._titleTimer = null;
-                }
-
-                // 更改标题
+            // 设置定时器确保标题不被其他脚本修改
+            window._titleTimer = setInterval(() => {
+              if (document.title !== newTitle) {
                 document.title = newTitle;
-                console.log('[Title Updater] 标题已更新为:', newTitle);
-
-                // 使用 setInterval 替代 setTimeout
-                window._titleTimer = setInterval(() => {
-                  if (document.title !== newTitle) {
-                    console.log('[Title Updater] 检测到标题被修改，重新设置');
-                    document.title = newTitle;
-                  }
-                }, 1000);
-
-                resolve(true);
-              } catch (e) {
-                console.error('[Title Updater] 设置标题错误:', e);
-                resolve(false);
               }
-            });
+            }, 1000);
+
+            // 立即设置一次
+            document.title = newTitle;
           },
           args: [applyRules.fixedTitle]
         });
-        console.log('固定标题应用结果:', result);
       } else if (applyRules.titleScript) {
-        console.log('应用自定义脚本');
-        await executeScript(applyRules.titleScript, tabId);
+        // 应用自定义脚本
+        await chrome.scripting.executeScript({
+          target: { tabId },
+          world: 'MAIN',
+          func: (script, title) => {
+            try {
+              // 清理旧的定时器
+              if (window._titleTimer) {
+                clearInterval(window._titleTimer);
+                window._titleTimer = null;
+              }
+
+              // 执行用户的脚本
+              const userFunc = (0, eval)(script);
+              const result = userFunc(title);
+
+              // 如果返回的是函数，就用于定时更新
+              if (typeof result === 'function') {
+                const updateTitle = result;  // 保存函数引用
+
+                window._titleTimer = setInterval(() => {
+                  try {
+                    const newTitle = updateTitle(title);
+                    if (typeof newTitle === 'string') {
+                      document.title = newTitle;
+                    }
+                  } catch (e) {
+                    console.error('更新标题错误:', e);
+                    if (window._titleTimer) {
+                      clearInterval(window._titleTimer);
+                      window._titleTimer = null;
+                    }
+                  }
+                }, 1000);
+
+                // 立即执行一次
+                const initialTitle = updateTitle(title);
+                if (typeof initialTitle === 'string') {
+                  document.title = initialTitle;
+                }
+              } else if (typeof result === 'string') {
+                // 如果直接返回字符串，就直接使用
+                document.title = result;
+
+                // 设置定时器确保标题不被其他脚本修改
+                window._titleTimer = setInterval(() => {
+                  if (document.title !== result) {
+                    document.title = result;
+                  }
+                }, 1000);
+              }
+            } catch (e) {
+              console.error('执行脚本错误:', e);
+              if (window._titleTimer) {
+                clearInterval(window._titleTimer);
+                window._titleTimer = null;
+              }
+            }
+          },
+          args: [applyRules.titleScript, originalTitle]
+        });
       }
     } catch (err) {
       console.error('执行脚本错误:', err);
@@ -342,216 +374,5 @@ function validateRule(rule) {
   } catch (e) {
     console.error('规则验证错误:', e);
     return false;
-  }
-}
-
-// 预定义的标题更新函数
-const TITLE_FUNCTIONS = {
-  'time': (originalTitle) => {
-    const now = new Date();
-    return `[${now.toLocaleTimeString()}] ${originalTitle}`;
-  },
-  'date': (originalTitle) => {
-    const now = new Date();
-    return `[${now.toLocaleDateString()} ${now.toLocaleTimeString()}] ${originalTitle}`;
-  },
-  'duration': (originalTitle, startTime) => {
-    const seconds = Math.floor((Date.now() - startTime) / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const timeStr = hours > 0 ?
-      `${hours}时${minutes % 60}分` :
-      `${minutes}分${seconds % 60}秒`;
-    return `[${timeStr}] ${originalTitle}`;
-  },
-  'video': (originalTitle) => {
-    const video = document.querySelector('video');
-    if (!video) return originalTitle;
-    const progress = Math.floor((video.currentTime / video.duration) * 100);
-    return `[${progress}%] ${originalTitle}`;
-  },
-  'custom_time': (originalTitle) => {
-    const now = new Date();
-    return `[${now.getHours()}:${now.getMinutes()}] ${originalTitle}`;
-  },
-  'custom_counter': (originalTitle, startTime) => {
-    const count = Math.floor((Date.now() - startTime) / 1000);
-    return `(${count}) ${originalTitle}`;
-  }
-  // ... 可以添加更多预定义函数
-};
-
-// 应用标题生成脚本
-async function executeScript(script, tabId) {
-  try {
-    console.log('开始执行自定义脚本'); // Background context log
-
-    // 1. 创建一个 Blob URL 包含用户脚本
-    const scriptContent = `
-      (function() {
-        return new Promise((resolve) => {
-          try {
-            console.log('[Title Updater] 开始执行自定义脚本');
-
-            // 清理函数
-            function cleanup() {
-              console.log('[Title Updater] 执行清理');
-              if (window._titleTimer) {
-                clearInterval(window._titleTimer);
-                window._titleTimer = null;
-                console.log('[Title Updater] 清理了定时器');
-              }
-              const oldScript = document.querySelector('script[data-title-updater]');
-              if (oldScript) {
-                oldScript.remove();
-                console.log('[Title Updater] 清理了旧脚本');
-              }
-            }
-
-            // 先清理旧的定时器和脚本
-            cleanup();
-
-            // 存储原始标题
-            if (!window._originalTitle) {
-              window._originalTitle = document.title;
-              console.log('[Title Updater] 保存原始标题:', window._originalTitle);
-            }
-
-            // 工具函数
-            const utils = {
-              getOriginalTitle: () => window._originalTitle,
-              getTime: () => new Date().toLocaleTimeString(),
-              getDate: () => new Date().toLocaleDateString(),
-              getSeconds: () => Math.floor((Date.now() - window._startTime) / 1000),
-              getMinutes: () => Math.floor((Date.now() - window._startTime) / 60000),
-              getHours: () => Math.floor((Date.now() - window._startTime) / 3600000),
-              select: selector => document.querySelector(selector),
-              selectAll: selector => document.querySelectorAll(selector),
-              getText: selector => document.querySelector(selector)?.textContent?.trim(),
-              getVideoProgress: () => {
-                const video = document.querySelector('video');
-                return video ? Math.floor((video.currentTime / video.duration) * 100) : null;
-              }
-            };
-
-            // 初始化
-            window._startTime = Date.now();
-            console.log('[Title Updater] 初始化完成');
-
-            // 执行用户脚本
-            console.log('[Title Updater] 开始执行用户脚本');
-            const userScript = ${JSON.stringify(script)};
-            let updateTitle;
-
-            try {
-              // 验证用户脚本返回的是函数
-              updateTitle = (new Function('utils', 'return ' + userScript))(utils);
-              console.log('[Title Updater] 脚本执行结果类型:', typeof updateTitle);
-
-              if (typeof updateTitle !== 'function') {
-                throw new Error('脚本必须返回一个函数');
-              }
-
-              // 测试函数是否能正常执行并返回字符串
-              const testResult = updateTitle();
-              console.log('[Title Updater] 测试执行结果:', testResult);
-
-              if (typeof testResult !== 'string') {
-                throw new Error('函数必须返回字符串');
-              }
-            } catch (e) {
-              console.error('[Title Updater] 脚本验证错误:', e);
-              cleanup();
-              resolve(false);
-              return;
-            }
-
-            // 设置定时更新
-            console.log('[Title Updater] 设置定时更新');
-            window._titleTimer = setInterval(() => {
-              try {
-                const newTitle = updateTitle();
-                if (newTitle && typeof newTitle === 'string') {
-                  document.title = newTitle;
-                }
-              } catch (e) {
-                console.error('[Title Updater] 更新标题错误:', e);
-                cleanup();
-              }
-            }, 1000);
-
-            // 立即执行一次
-            const initialTitle = updateTitle();
-            if (initialTitle && typeof initialTitle === 'string') {
-              document.title = initialTitle;
-              console.log('[Title Updater] 初始标题已设置:', initialTitle);
-            }
-
-            resolve(true);
-          } catch (e) {
-            console.error('[Title Updater] 初始化标题错误:', e);
-            cleanup();
-            resolve(false);
-          }
-        });
-      })();
-    `;
-
-    // 2. 注入脚本
-    console.log('注入脚本到页面'); // Background context log
-    const result = await chrome.scripting.executeScript({
-      target: { tabId },
-      world: 'MAIN',
-      func: (code) => {
-        return new Promise((resolve) => {
-          try {
-            console.log('[Title Updater] 开始注入脚本');
-            const script = document.createElement('script');
-            script.setAttribute('data-title-updater', 'true');
-            script.textContent = code;
-            (document.head || document.documentElement).appendChild(script);
-            script.remove();
-            console.log('[Title Updater] 脚本注入完成');
-            setTimeout(() => resolve(true), 100);
-          } catch (e) {
-            console.error('[Title Updater] 注入脚本错误:', e);
-            resolve(false);
-          }
-        });
-      },
-      args: [scriptContent]
-    });
-    console.log('脚本注入结果:', result); // Background context log
-
-  } catch (e) {
-    console.error('执行脚本错误:', e); // Background context log
-  }
-}
-
-// 预定义一个通用的脚本执行器
-function executeUserScript(script) {
-  // 存储原始标题
-  if (!document.querySelector('meta[name="original-title"]')) {
-    const metaTag = document.createElement('meta');
-    metaTag.setAttribute('name', 'original-title');
-    metaTag.setAttribute('content', document.title);
-    document.head.appendChild(metaTag);
-  }
-
-  // 提供一些通用的工具函数和变量
-  const originalTitle = document.querySelector('meta[name="original-title"]')?.content || document.title;
-  const getTime = () => new Date().toLocaleTimeString();
-  const getDate = () => new Date().toLocaleDateString();
-  const getSeconds = () => Math.floor((Date.now() - window._startTime) / 1000);
-  const getMinutes = () => Math.floor(getSeconds() / 60);
-  const getHours = () => Math.floor(getMinutes() / 60);
-
-  // 执行用户脚本
-  try {
-    // 用户脚本可以访问上面定义的所有变量和函数
-    return eval(script);
-  } catch (e) {
-    console.error('脚本执行错误:', e);
-    return originalTitle;
   }
 }
