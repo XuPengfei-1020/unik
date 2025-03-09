@@ -6,16 +6,78 @@ import {
   DialogActions,
   TextField,
   Button,
-  FormControl,
-  FormControlLabel,
-  Radio,
-  RadioGroup,
-  FormLabel,
   Box,
-  ToggleButton,
-  ToggleButtonGroup,
-  Alert
+  IconButton,
+  Tooltip,
+  Switch,
+  FormControlLabel,
+  Stack,
+  InputAdornment,
+  Typography,
+  Chip,
+  Alert,
+  Autocomplete,
+  styled
 } from '@mui/material';
+import {
+  RegexIcon,
+  CaseSensitiveIcon,
+  WholeWordIcon,
+  CodeIcon,
+  TitleIcon
+} from './icons';
+import { TitleRule } from '../../models/Rule';
+
+// 自定义样式组件
+const StyledDialogTitle = styled(DialogTitle)(({ theme }) => ({
+  color: theme.palette.text.primary,
+  padding: theme.spacing(3),
+  paddingBottom: theme.spacing(2),
+  fontSize: '1.2rem',
+  fontWeight: 500,
+  backgroundColor: '#fff',
+  position: 'relative',
+  zIndex: 1
+}));
+
+const StyledTextField = styled(TextField)(({ theme }) => ({
+  '& .MuiInputBase-root': {
+    minHeight: 56
+  }
+}));
+
+const StyledSwitch = styled(Switch)(({ theme }) => ({
+  width: 42,
+  height: 26,
+  padding: 0,
+  '& .MuiSwitch-switchBase': {
+    padding: 0,
+    margin: 2,
+    transitionDuration: '300ms',
+    '&.Mui-checked': {
+      transform: 'translateX(16px)',
+      color: '#fff',
+      '& + .MuiSwitch-track': {
+        backgroundColor: theme.palette.primary.main,
+        opacity: 1,
+        border: 0
+      }
+    }
+  },
+  '& .MuiSwitch-thumb': {
+    boxSizing: 'border-box',
+    width: 22,
+    height: 22
+  },
+  '& .MuiSwitch-track': {
+    borderRadius: 26 / 2,
+    backgroundColor: theme.palette.grey[400],
+    opacity: 1,
+    transition: theme.transitions.create(['background-color'], {
+      duration: 500
+    })
+  }
+}));
 
 const defaultRule = {
   id: crypto.randomUUID(),
@@ -37,35 +99,54 @@ const defaultRule = {
   },
   applyRules: {
     fixedTitle: '',
-    titleScript: ''
+    titleScript: null
   },
   enabled: true,
   createTime: Date.now()
 };
 
-export function RuleForm({ open, rule, onSave, onClose }) {
+// 匹配选项按钮配置
+const matchOptionButtons = [
+  {
+    value: 'isRegex',
+    icon: <RegexIcon />,
+    tooltip: '使用正则表达式'
+  },
+  {
+    value: 'caseSensitive',
+    icon: <CaseSensitiveIcon />,
+    tooltip: '区分大小写'
+  },
+  {
+    value: 'wholeWord',
+    icon: <WholeWordIcon />,
+    tooltip: '完整匹配'
+  }
+];
+
+export function RuleForm({ open, rule, onSave, onClose, existingTags = [] }) {
   const [formData, setFormData] = useState(rule || defaultRule);
-  const [titleType, setTitleType] = useState(rule?.applyRules.fixedTitle ? 'fixed' : 'script');
+  const [useScript, setUseScript] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (rule) {
       setFormData(rule);
-      setTitleType(rule.applyRules.fixedTitle ? 'fixed' : 'script');
+      setUseScript(!!rule.applyRules.titleScript);
     } else {
       setFormData(defaultRule);
-      setTitleType('fixed');
+      setUseScript(false);
     }
   }, [rule]);
 
-  const handlePatternOptionsChange = (pattern, options) => {
+  const handlePatternOptionsChange = (pattern, option) => {
     setFormData(prev => ({
       ...prev,
       matchRules: {
         ...prev.matchRules,
         [pattern]: {
           ...prev.matchRules[pattern],
-          ...options
+          [option]: !prev.matchRules[pattern][option]
         }
       }
     }));
@@ -75,15 +156,21 @@ export function RuleForm({ open, rule, onSave, onClose }) {
     e.preventDefault();
     setError(null);
 
-    try {
-      const finalRule = {
-        ...formData,
-        applyRules: {
-          fixedTitle: titleType === 'fixed' ? formData.applyRules.fixedTitle : undefined,
-          titleScript: titleType === 'script' ? formData.applyRules.titleScript : undefined
-        }
-      };
+    const finalRule = new TitleRule({
+      ...formData,
+      applyRules: {
+        fixedTitle: useScript ? '' : formData.applyRules.fixedTitle,
+        titleScript: useScript ? formData.applyRules.titleScript : null
+      }
+    });
 
+    const validation = finalRule.validate();
+    if (!validation.isValid) {
+      setError(validation.error);
+      return;
+    }
+
+    try {
       await onSave(finalRule);
       onClose();
     } catch (err) {
@@ -91,165 +178,220 @@ export function RuleForm({ open, rule, onSave, onClose }) {
     }
   };
 
-  const handleTagsChange = (e) => {
-    const tags = e.target.value.split(',').map(t => t.trim()).filter(Boolean);
-    setFormData(prev => ({ ...prev, tags }));
-  };
+  const renderMatchOptions = (pattern) => (
+    <InputAdornment position="end">
+      <Stack direction="row" spacing={0}>
+        {matchOptionButtons.map(({ value, icon, tooltip }) => (
+          <Tooltip key={value} title={tooltip}>
+            <IconButton
+              size="medium"
+              color={formData.matchRules[pattern][value] ? 'primary' : 'default'}
+              onClick={() => handlePatternOptionsChange(pattern, value)}
+              sx={{
+                '&.MuiIconButton-root': {
+                  marginRight: -1
+                }
+              }}
+            >
+              {icon}
+            </IconButton>
+          </Tooltip>
+        ))}
+      </Stack>
+    </InputAdornment>
+  );
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="md"
+      maxWidth="sm"
       fullWidth
-      disableEnforceFocus
-      disableAutoFocus
-      onBackdropClick={onClose}
-      aria-labelledby="rule-form-title"
+      PaperProps={{
+        elevation: 3,
+        sx: {
+          borderRadius: 2
+        }
+      }}
     >
-      <form onSubmit={handleSubmit}>
-        <DialogTitle id="rule-form-title">{rule ? '编辑规则' : '添加规则'}</DialogTitle>
-        <DialogContent>
+      <StyledDialogTitle>
+        {rule ? '编辑规则' : '添加规则'}
+      </StyledDialogTitle>
+
+      <DialogContent sx={{ p: 3 }}>
+        <form id="rule-form" onSubmit={handleSubmit}>
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert
+              severity="error"
+              sx={{ mb: 3 }}
+              variant="filled"
+            >
               {error}
             </Alert>
           )}
 
-          <TextField
-            fullWidth
-            label="域名"
-            value={formData.domain}
-            onChange={e => setFormData(prev => ({ ...prev, domain: e.target.value }))}
-            margin="normal"
-            required
-          />
-
-          <TextField
-            fullWidth
-            label="标签"
-            value={formData.tags.join(', ')}
-            onChange={handleTagsChange}
-            margin="normal"
-            helperText="多个标签用逗号分隔"
-          />
-
-          <Box sx={{ mt: 2 }}>
-            <FormLabel>标题匹配规则</FormLabel>
-            <TextField
+          <Stack spacing={3} sx={{ pt: 1 }}>
+            {/* 域名输入 */}
+            <StyledTextField
+              label="域名"
+              value={formData.domain}
+              onChange={e => setFormData(prev => ({ ...prev, domain: e.target.value }))}
+              required
               fullWidth
-              value={formData.matchRules.titlePattern.pattern}
-              onChange={e => handlePatternOptionsChange('titlePattern', { pattern: e.target.value })}
-              margin="normal"
+              placeholder="例如：example.com"
             />
-            <ToggleButtonGroup
-              value={Object.entries(formData.matchRules.titlePattern)
-                .filter(([key, value]) => value && key !== 'pattern')
-                .map(([key]) => key)}
-              onChange={(e, newValues) => {
-                const options = {
-                  isRegex: newValues.includes('isRegex'),
-                  caseSensitive: newValues.includes('caseSensitive'),
-                  wholeWord: newValues.includes('wholeWord')
-                };
-                handlePatternOptionsChange('titlePattern', options);
-              }}
-            >
-              <ToggleButton value="isRegex">正则</ToggleButton>
-              <ToggleButton value="caseSensitive">区分大小写</ToggleButton>
-              <ToggleButton value="wholeWord">完整匹配</ToggleButton>
-            </ToggleButtonGroup>
-          </Box>
 
-          <Box sx={{ mt: 2 }}>
-            <FormLabel>URL匹配规则</FormLabel>
-            <TextField
-              fullWidth
-              value={formData.matchRules.urlPattern.pattern}
-              onChange={e => handlePatternOptionsChange('urlPattern', { pattern: e.target.value })}
-              margin="normal"
+            {/* 标签输入 */}
+            <Autocomplete
+              multiple
+              freeSolo
+              options={existingTags}
+              value={formData.tags}
+              onChange={(e, newValue) => setFormData(prev => ({ ...prev, tags: newValue }))}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    label={option}
+                    {...getTagProps({ index })}
+                    size="small"
+                  />
+                ))
+              }
+              renderInput={(params) => (
+                <StyledTextField
+                  {...params}
+                  label="标签"
+                  placeholder="输入标签后按回车添加"
+                  helperText="可选，用于分类和筛选规则"
+                />
+              )}
             />
-            <ToggleButtonGroup
-              value={Object.entries(formData.matchRules.urlPattern)
-                .filter(([key, value]) => value && key !== 'pattern')
-                .map(([key]) => key)}
-              onChange={(e, newValues) => {
-                const options = {
-                  isRegex: newValues.includes('isRegex'),
-                  caseSensitive: newValues.includes('caseSensitive'),
-                  wholeWord: newValues.includes('wholeWord')
-                };
-                handlePatternOptionsChange('urlPattern', options);
-              }}
-            >
-              <ToggleButton value="isRegex">正则</ToggleButton>
-              <ToggleButton value="caseSensitive">区分大小写</ToggleButton>
-              <ToggleButton value="wholeWord">完整匹配</ToggleButton>
-            </ToggleButtonGroup>
-          </Box>
 
-          <Box sx={{ mt: 2 }}>
-            <FormControl component="fieldset">
-              <FormLabel>标题更新方式</FormLabel>
-              <RadioGroup
-                value={titleType}
-                onChange={e => setTitleType(e.target.value)}
+            {/* 标题匹配规则 */}
+            <Box>
+              <Typography variant="subtitle2" gutterBottom color="textSecondary">
+                标题匹配规则
+              </Typography>
+              <StyledTextField
+                fullWidth
+                placeholder="输入标题匹配模式"
+                value={formData.matchRules.titlePattern.pattern}
+                onChange={e => setFormData(prev => ({
+                  ...prev,
+                  matchRules: {
+                    ...prev.matchRules,
+                    titlePattern: {
+                      ...prev.matchRules.titlePattern,
+                      pattern: e.target.value
+                    }
+                  }
+                }))}
+                InputProps={{
+                  endAdornment: renderMatchOptions('titlePattern')
+                }}
+              />
+            </Box>
+
+            {/* URL匹配规则 */}
+            <Box>
+              <Typography variant="subtitle2" gutterBottom color="textSecondary">
+                URL匹配规则
+              </Typography>
+              <StyledTextField
+                fullWidth
+                placeholder="输入URL匹配模式"
+                value={formData.matchRules.urlPattern.pattern}
+                onChange={e => setFormData(prev => ({
+                  ...prev,
+                  matchRules: {
+                    ...prev.matchRules,
+                    urlPattern: {
+                      ...prev.matchRules.urlPattern,
+                      pattern: e.target.value
+                    }
+                  }
+                }))}
+                InputProps={{
+                  endAdornment: renderMatchOptions('urlPattern')
+                }}
+              />
+            </Box>
+
+            {/* 标题更新方式 */}
+            <Box>
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="flex-end"
+                spacing={1}
+                sx={{ mb: 1 }}
               >
                 <FormControlLabel
-                  value="fixed"
-                  control={<Radio />}
-                  label="固定标题"
+                  control={
+                    <StyledSwitch
+                      checked={useScript}
+                      onChange={(e) => setUseScript(e.target.checked)}
+                      size="small"
+                    />
+                  }
+                  label={
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      {useScript ? <CodeIcon fontSize="small" /> : <TitleIcon fontSize="small" />}
+                    </Stack>
+                  }
                 />
-                <FormControlLabel
-                  value="script"
-                  control={<Radio />}
-                  label="自定义脚本"
-                />
-              </RadioGroup>
-            </FormControl>
+              </Stack>
 
-            {titleType === 'fixed' ? (
-              <TextField
-                fullWidth
-                label="固定标题"
-                value={formData.applyRules.fixedTitle}
-                onChange={e => setFormData(prev => ({
-                  ...prev,
-                  applyRules: {
-                    ...prev.applyRules,
-                    fixedTitle: e.target.value
-                  }
-                }))}
-                margin="normal"
-                required
-              />
-            ) : (
-              <TextField
-                fullWidth
-                label="自定义脚本"
-                value={formData.applyRules.titleScript}
-                onChange={e => setFormData(prev => ({
-                  ...prev,
-                  applyRules: {
-                    ...prev.applyRules,
-                    titleScript: e.target.value
-                  }
-                }))}
-                margin="normal"
-                required
-                multiline
-                rows={4}
-              />
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>取消</Button>
-          <Button type="submit" variant="contained" color="primary">
-            保存
-          </Button>
-        </DialogActions>
-      </form>
+              {useScript ? (
+                <StyledTextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  placeholder="输入JavaScript代码来处理标题"
+                  value={formData.applyRules.titleScript || ''}
+                  onChange={e => setFormData(prev => ({
+                    ...prev,
+                    applyRules: {
+                      ...prev.applyRules,
+                      titleScript: e.target.value
+                    }
+                  }))}
+                />
+              ) : (
+                <StyledTextField
+                  fullWidth
+                  placeholder="输入要替换的固定标题"
+                  value={formData.applyRules.fixedTitle}
+                  onChange={e => setFormData(prev => ({
+                    ...prev,
+                    applyRules: {
+                      ...prev.applyRules,
+                      fixedTitle: e.target.value
+                    }
+                  }))}
+                />
+              )}
+            </Box>
+          </Stack>
+        </form>
+      </DialogContent>
+
+      <DialogActions sx={{ justifyContent: 'center', p: 3 }}>
+        <Button
+          type="submit"
+          form="rule-form"
+          variant="contained"
+          size="large"
+          sx={{
+            minWidth: 120,
+            borderRadius: 2,
+            textTransform: 'none',
+            fontSize: '1rem'
+          }}
+        >
+          保存规则
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 }

@@ -43,6 +43,13 @@ export class TitlePattern {
       return false;
     }
   }
+
+  validate(): { isValid: boolean; error?: string } {
+    if (!this.pattern) {
+      return { isValid: false, error: '请输入标题匹配模式' };
+    }
+    return { isValid: true };
+  }
 }
 
 /**
@@ -90,6 +97,13 @@ export class URLPattern {
       return false;
     }
   }
+
+  validate(): { isValid: boolean; error?: string } {
+    if (!this.pattern) {
+      return { isValid: false, error: '请输入URL匹配模式' };
+    }
+    return { isValid: true };
+  }
 }
 
 /**
@@ -123,6 +137,31 @@ export class MatchRules {
     if (this.titlePattern && !this.titlePattern.matches(title)) return false;
     return true;
   }
+
+  validate(): { isValid: boolean; error?: string } {
+    // 至少需要一个匹配规则
+    if (!this.titlePattern?.pattern && !this.urlPattern?.pattern) {
+      return { isValid: false, error: '请至少设置一个匹配规则（标题或URL）' };
+    }
+
+    // 验证标题匹配规则
+    if (this.titlePattern) {
+      const titleValidation = this.titlePattern.validate();
+      if (!titleValidation.isValid) {
+        return titleValidation;
+      }
+    }
+
+    // 验证URL匹配规则
+    if (this.urlPattern) {
+      const urlValidation = this.urlPattern.validate();
+      if (!urlValidation.isValid) {
+        return urlValidation;
+      }
+    }
+
+    return { isValid: true };
+  }
 }
 
 /**
@@ -154,6 +193,13 @@ export class ApplyRules {
   apply(originalTitle: string): string {
     // 直接使用替换字符串，不再执行脚本
     return this.fixedTitle;
+  }
+
+  validate(): { isValid: boolean; error?: string } {
+    if (!this.fixedTitle && !this.titleScript) {
+      return { isValid: false, error: '请输入固定标题或自定义脚本' };
+    }
+    return { isValid: true };
   }
 }
 
@@ -208,16 +254,32 @@ export class TitleRule {
   }
 
   /**
-   * 验证规则是否有效
+   * 验证规则是否有效，返回验证结果和错误信息
    */
-  validate(): boolean {
-    if (!this.id || typeof this.id !== 'string') return false;
-    if (!this.domain || typeof this.domain !== 'string') return false;
-    if (!Array.isArray(this.tags)) return false;
-    if (!this.matchRules) return false;
-    if (!this.applyRules) return false;
-    if (!this.applyRules.fixedTitle && !this.applyRules.titleScript) return false;
-    return true;
+  validate(): { isValid: boolean; error?: string } {
+    if (!this.id || typeof this.id !== 'string') {
+      return { isValid: false, error: '规则ID无效' };
+    }
+    if (!this.domain || typeof this.domain !== 'string') {
+      return { isValid: false, error: '请输入域名' };
+    }
+    if (!Array.isArray(this.tags)) {
+      return { isValid: false, error: '标签格式无效' };
+    }
+
+    // 验证匹配规则
+    const matchRulesValidation = this.matchRules.validate();
+    if (!matchRulesValidation.isValid) {
+      return matchRulesValidation;
+    }
+
+    // 验证应用规则
+    const applyRulesValidation = this.applyRules.validate();
+    if (!applyRulesValidation.isValid) {
+      return applyRulesValidation;
+    }
+
+    return { isValid: true };
   }
 
   /**
