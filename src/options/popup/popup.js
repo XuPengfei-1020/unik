@@ -1,29 +1,94 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // 创建 DOM 元素
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="popup-container">
+      <div class="url-section">
+        <div id="current-url" class="url-text"></div>
+        <button id="toggle-url" class="icon-button" title="显示/隐藏完整URL">
+          <span class="material-icons">unfold_more</span>
+        </button>
+      </div>
+
+      <div class="title-section">
+        <div class="title-row">
+          <label>原始标题:</label>
+          <div id="original-title" class="title-text"></div>
+        </div>
+        <div class="title-row">
+          <label>自定义标题:</label>
+          <input type="text" id="custom-title-input" class="title-input" placeholder="输入自定义标题">
+        </div>
+      </div>
+
+      <div class="advanced-section">
+        <div class="advanced-header">
+          <button id="toggle-advanced" class="text-button">
+            <span class="material-icons">settings</span>
+            高级选项
+          </button>
+        </div>
+        <div class="advanced-options hidden">
+          <div class="script-option">
+            <label class="checkbox-label">
+              <input type="checkbox" id="use-script">
+              使用脚本处理标题
+            </label>
+            <textarea id="title-script" class="script-input hidden" placeholder="输入处理标题的JavaScript代码"></textarea>
+          </div>
+          <div class="tags-section">
+            <label>规则标签:</label>
+            <input type="text" id="rule-tags" class="tags-input" placeholder="输入标签，用逗号分隔">
+          </div>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button id="save-title" class="primary-button hidden">保存规则</button>
+        <button id="open-options" class="text-button">打开选项</button>
+      </div>
+    </div>
+  `;
+
   // 获取所有需要的 DOM 元素
   const elements = {
     currentUrl: document.getElementById('current-url'),
+    toggleUrl: document.getElementById('toggle-url'),
     originalTitle: document.getElementById('original-title'),
     customTitleInput: document.getElementById('custom-title-input'),
-    toggleUrl: document.getElementById('toggle-url'),
-    saveTitle: document.getElementById('save-title'),
-    openOptions: document.getElementById('open-options'),
     useScript: document.getElementById('use-script'),
     titleScript: document.getElementById('title-script'),
     ruleTags: document.getElementById('rule-tags'),
+    saveTitle: document.getElementById('save-title'),
     toggleAdvanced: document.getElementById('toggle-advanced'),
-    advancedOptions: document.querySelector('.advanced-options')
+    advancedOptions: document.querySelector('.advanced-options'),
+    openOptions: document.getElementById('open-options')
   };
 
-  // 验证所有元素都存在
-  for (const [key, element] of Object.entries(elements)) {
-    if (!element) {
-      console.error(`找不到元素: ${key}`);
+  // 验证所有必需的元素是否存在
+  const requiredElements = ['currentUrl', 'originalTitle', 'customTitleInput', 'saveTitle'];
+  for (const key of requiredElements) {
+    if (!elements[key]) {
+      console.error(`找不到必需的元素: ${key}`);
       return;
     }
   }
 
   let currentTab = null;
   let originalTitle = '';
+
+  // 检查标题是否已修改
+  function checkTitleDifference() {
+    const newTitle = elements.customTitleInput.value.trim();
+    const useScript = elements.useScript?.checked;
+    const titleScript = elements.titleScript?.value.trim();
+
+    if ((!useScript && newTitle !== originalTitle) || (useScript && titleScript)) {
+      elements.saveTitle.classList.remove('hidden');
+    } else {
+      elements.saveTitle.classList.add('hidden');
+    }
+  }
 
   // 获取当前标签页信息
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -71,24 +136,53 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // URL 展开/收起功能
-  elements.toggleUrl.addEventListener('click', (e) => {
-    e.preventDefault();
+  if (elements.toggleUrl) {
+    elements.toggleUrl.addEventListener('click', (e) => {
+      e.preventDefault();
 
-    if (elements.currentUrl.classList.contains('truncated')) {
-      // 展开 URL
-      elements.currentUrl.classList.remove('truncated');
-      elements.toggleUrl.textContent = '收起';
-    } else {
-      // 收起 URL
-      elements.currentUrl.classList.add('truncated');
-      elements.toggleUrl.textContent = '展开';
-    }
-  });
+      if (elements.currentUrl.classList.contains('truncated')) {
+        // 展开 URL
+        elements.currentUrl.classList.remove('truncated');
+        elements.toggleUrl.textContent = '收起';
+      } else {
+        // 收起 URL
+        elements.currentUrl.classList.add('truncated');
+        elements.toggleUrl.textContent = '展开';
+      }
+    });
+  }
 
   // 监听标题输入变化
   elements.customTitleInput.addEventListener('input', () => {
     checkTitleDifference();
   });
+
+  // 切换高级选项显示
+  if (elements.toggleAdvanced && elements.advancedOptions) {
+    elements.toggleAdvanced.addEventListener('click', () => {
+      elements.advancedOptions.classList.toggle('hidden');
+    });
+  }
+
+  // 打开选项页面
+  if (elements.openOptions) {
+    elements.openOptions.addEventListener('click', () => {
+      if (chrome.runtime.openOptionsPage) {
+        chrome.runtime.openOptionsPage();
+      } else {
+        window.open(chrome.runtime.getURL('dist/options/index.html'));
+      }
+    });
+  }
+
+  // 切换脚本输入显示
+  if (elements.useScript && elements.titleScript) {
+    elements.useScript.addEventListener('change', (e) => {
+      elements.titleScript.classList.toggle('hidden', !e.target.checked);
+      elements.customTitleInput.classList.toggle('hidden', e.target.checked);
+      checkTitleDifference();
+    });
+  }
 
   // 验证规则对象的结构和数据
   function validateRule(rule) {
@@ -143,8 +237,18 @@ document.addEventListener('DOMContentLoaded', () => {
       domain: new URL(currentTab.url).hostname,
       tags: tags,
       matchRules: {
-        titlePattern: escapeRegExp(originalTitle),
-        urlPattern: escapeRegExp(currentTab.url)
+        titlePattern: {
+          pattern: escapeRegExp(originalTitle),
+          isRegex: false,
+          caseSensitive: false,
+          wholeWord: false
+        },
+        urlPattern: {
+          pattern: escapeRegExp(currentTab.url),
+          isRegex: false,
+          caseSensitive: false,
+          wholeWord: false
+        }
       },
       applyRules: {
         fixedTitle: useScript ? undefined : newTitle,
@@ -171,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // 检查是否存在相同的规则
       const existingRuleIndex = rules.findIndex(rule =>
         rule.domain === newRule.domain &&
-        rule.matchRules.titlePattern === newRule.matchRules.titlePattern
+        rule.matchRules.titlePattern.pattern === newRule.matchRules.titlePattern.pattern
       );
 
       if (existingRuleIndex >= 0) {
@@ -188,11 +292,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       chrome.storage.sync.set({ 'titleRules': rules }, () => {
         console.log('规则已保存:', newRule);
-
-        // 立即应用规则
-        applyRule(newRule, currentTab.id);
-
-        // 显示成功动画
         showSaveSuccess();
       });
     });
@@ -218,107 +317,5 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.saveTitle.textContent = '保存规则';
       }, 500);
     }, 1000);
-  }
-
-  // 切换高级选项显示
-  elements.toggleAdvanced.addEventListener('click', () => {
-    elements.advancedOptions.classList.toggle('hidden');
-  });
-
-  // 切换脚本输入框显示
-  elements.useScript.addEventListener('change', (e) => {
-    elements.titleScript.classList.toggle('hidden', !e.target.checked);
-    elements.customTitleInput.classList.toggle('hidden', e.target.checked);
-  });
-
-  // 打开选项页按钮
-  elements.openOptions.addEventListener('click', () => {
-    if (chrome.runtime.openOptionsPage) {
-      chrome.runtime.openOptionsPage();
-    } else {
-      // 降级方案
-      window.open(chrome.runtime.getURL('options.html'));
-    }
-  });
-
-  // 检查标题是否与原始标题不同
-  function checkTitleDifference() {
-    const currentTitle = elements.customTitleInput.value.trim();
-
-    if (currentTitle !== originalTitle && currentTitle !== '') {
-      elements.saveTitle.classList.remove('hidden');
-    } else {
-      elements.saveTitle.classList.add('hidden');
-    }
-  }
-
-  // 在 popup.js 中添加 applyRule 函数
-  function applyRule(rule, tabId) {
-    const { applyRules } = rule;
-
-    if (applyRules.fixedTitle) {
-      // 应用固定标题
-      chrome.scripting.executeScript({
-        target: { tabId: tabId },
-        func: (newTitle) => {
-          // 存储原始标题（如果尚未存储）
-          if (!document.querySelector('meta[name="original-title"]')) {
-            const metaTag = document.createElement('meta');
-            metaTag.setAttribute('name', 'original-title');
-            metaTag.setAttribute('content', document.title);
-            document.head.appendChild(metaTag);
-          }
-
-          // 更改标题
-          document.title = newTitle;
-
-          // 使用定时器保持标题
-          const originalSetTimeout = window.setTimeout;
-          const titleKeeper = () => {
-            if (document.title !== newTitle) {
-              document.title = newTitle;
-            }
-            originalSetTimeout(titleKeeper, 1000);
-          };
-          originalSetTimeout(titleKeeper, 1000);
-        },
-        args: [applyRules.fixedTitle]
-      });
-    } else if (applyRules.titleScript) {
-      // 应用标题生成脚本
-      chrome.scripting.executeScript({
-        target: { tabId: tabId },
-        func: (script) => {
-          // 存储原始标题（如果尚未存储）
-          if (!document.querySelector('meta[name="original-title"]')) {
-            const metaTag = document.createElement('meta');
-            metaTag.setAttribute('name', 'original-title');
-            metaTag.setAttribute('content', document.title);
-            document.head.appendChild(metaTag);
-          }
-
-          // 执行标题生成脚本
-          try {
-            const newTitle = new Function('return ' + script)()();
-            if (newTitle && typeof newTitle === 'string') {
-              document.title = newTitle;
-
-              // 使用定时器保持标题
-              const originalSetTimeout = window.setTimeout;
-              const titleKeeper = () => {
-                if (document.title !== newTitle) {
-                  document.title = newTitle;
-                }
-                originalSetTimeout(titleKeeper, 1000);
-              };
-              originalSetTimeout(titleKeeper, 1000);
-            }
-          } catch (e) {
-            console.error('标题生成脚本错误:', e);
-          }
-        },
-        args: [applyRules.titleScript]
-      });
-    }
   }
 });

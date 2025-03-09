@@ -91,6 +91,11 @@ export function RuleForm({ open, rule, onSave, onClose }) {
     }
   };
 
+  const handleTagsChange = (e) => {
+    const tags = e.target.value.split(',').map(t => t.trim()).filter(Boolean);
+    setFormData(prev => ({ ...prev, tags }));
+  };
+
   return (
     <Dialog
       open={open}
@@ -124,10 +129,7 @@ export function RuleForm({ open, rule, onSave, onClose }) {
             fullWidth
             label="标签"
             value={formData.tags.join(', ')}
-            onChange={e => setFormData(prev => ({
-              ...prev,
-              tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean)
-            }))}
+            onChange={handleTagsChange}
             margin="normal"
             helperText="多个标签用逗号分隔"
           />

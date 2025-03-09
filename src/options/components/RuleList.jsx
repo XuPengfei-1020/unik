@@ -19,6 +19,9 @@ import {
 } from '@mui/icons-material';
 
 function RuleCard({ rule, onEdit, onDelete }) {
+  // 确保 tags 是数组
+  const tags = Array.isArray(rule.tags) ? rule.tags : [];
+
   return (
     <Card sx={{ mb: 2 }}>
       <CardContent>
@@ -27,7 +30,7 @@ function RuleCard({ rule, onEdit, onDelete }) {
             {rule.domain}
           </Typography>
           <Box>
-            {rule.tags.map((tag, index) => (
+            {tags.map((tag, index) => (
               <Chip
                 key={index}
                 label={tag}

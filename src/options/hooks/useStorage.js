@@ -24,7 +24,8 @@ export function useStorage(key, defaultValue) {
     // 监听存储变化
     const handleStorageChange = (changes, namespace) => {
       if (namespace === 'sync' && changes[key]) {
-        setValue(changes[key].newValue);
+        // 使用默认值作为后备
+        setValue(changes[key].newValue || defaultValue);
       }
     };
 
@@ -32,12 +33,14 @@ export function useStorage(key, defaultValue) {
     return () => {
       chrome.storage.onChanged.removeListener(handleStorageChange);
     };
-  }, [key]);
+  }, [key, defaultValue]); // 添加 defaultValue 到依赖数组
 
   const updateValue = async (newValue) => {
     try {
-      await chrome.storage.sync.set({ [key]: newValue });
-      setValue(newValue);
+      // 确保不存储 undefined 或 null
+      const valueToStore = newValue || defaultValue;
+      await chrome.storage.sync.set({ [key]: valueToStore });
+      setValue(valueToStore);
       setError(null);
     } catch (err) {
       setError(err);

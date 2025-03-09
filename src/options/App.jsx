@@ -33,6 +33,9 @@ export function App() {
   const [showForm, setShowForm] = useState(false);
   const [notification, setNotification] = useState(null);
 
+  // 确保 rules 是数组
+  const ruleList = Array.isArray(rules) ? rules : [];
+
   const handleSave = async (rule) => {
     try {
       await saveRule(rule);
@@ -69,7 +72,7 @@ export function App() {
     }
   };
 
-  const filteredRules = rules.filter(rule => {
+  const filteredRules = ruleList.filter(rule => {
     if (selectedDomain && rule.domain !== selectedDomain) {
       return false;
     }
@@ -78,9 +81,9 @@ export function App() {
       const searchLower = searchTerm.toLowerCase();
       return (
         rule.domain.toLowerCase().includes(searchLower) ||
-        rule.tags.some(tag => tag.toLowerCase().includes(searchLower)) ||
-        (rule.applyRules.fixedTitle || '').toLowerCase().includes(searchLower) ||
-        (rule.applyRules.titleScript || '').toLowerCase().includes(searchLower)
+        (Array.isArray(rule.tags) && rule.tags.some(tag => tag.toLowerCase().includes(searchLower))) ||
+        (rule.applyRules?.fixedTitle || '').toLowerCase().includes(searchLower) ||
+        (rule.applyRules?.titleScript || '').toLowerCase().includes(searchLower)
       );
     }
 

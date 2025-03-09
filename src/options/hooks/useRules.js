@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useStorage } from './useStorage';
+import { TitleRule } from '../../models/Rule.ts';
 
 export function useRules() {
   const {
@@ -64,32 +65,16 @@ export function useRules() {
       newRules.push(rule);
     }
 
-    await setRules(newRules);
-
-    // 通知后台重新加载规则
-    try {
-      const response = await chrome.runtime.sendMessage({ type: 'reloadRules' });
-      if (!response?.success) {
-        throw new Error(response?.error || '规则应用失败');
-      }
-      return response;
-    } catch (error) {
-      console.error('通知后台重新加载规则失败:', error);
-      throw error;
-    }
+    // 将规则转换为 TitleRule 实例并保存到 storage
+    const titleRules = newRules.map(r => TitleRule.fromJSON(r));
+    await setRules(titleRules.map(r => r.toJSON()));
   }, [rules, setRules, validateRule]);
 
   const deleteRule = useCallback(async (id) => {
     const newRules = rules.filter(r => r.id !== id);
-    await setRules(newRules);
-
-    // 通知后台重新加载规则
-    try {
-      await chrome.runtime.sendMessage({ type: 'reloadRules' });
-    } catch (error) {
-      console.error('通知后台重新加载规则失败:', error);
-      throw error;
-    }
+    // 将规则转换为 TitleRule 实例并保存到 storage
+    const titleRules = newRules.map(r => TitleRule.fromJSON(r));
+    await setRules(titleRules.map(r => r.toJSON()));
   }, [rules, setRules]);
 
   const getDomains = useCallback(() => {
