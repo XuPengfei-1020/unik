@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
+import { resolve, dirname, basename, relative } from 'path';
 import fs from 'fs';
+import { globSync } from 'glob';
 
 // 通用配置
 const commonConfig = {
@@ -24,13 +25,13 @@ const commonConfig = {
             return 'background/background.js';
           }
           if (chunkInfo.name === 'popup') {
-            return 'popup/popup.js';
+            return 'options/popup/popup.js';
           }
           return '[name]/index.js';
         },
         chunkFileNames: 'shared/[name].[hash].js',
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name.includes('icons/')) {
+          if (assetInfo.name?.includes('icons/')) {
             return assetInfo.name;
           }
           return 'assets/[name].[ext]';
@@ -48,7 +49,7 @@ export default defineConfig(({ command, mode }) => {
         build: {
           ...commonConfig.build,
           watch: {
-            include: ['src/**/*'],
+            include: ['src/**/*', 'manifest.json'],
             ignored: [
               '**/node_modules/**',
               '**/dist/**',
@@ -59,64 +60,48 @@ export default defineConfig(({ command, mode }) => {
       }
     : commonConfig;
 
-  // 添加插件来复制 manifest.json 和图标
+  // 添加插件来复制文件
   config.plugins.push({
     name: 'copy-extension-files',
     generateBundle() {
+      // 通用复制函数，支持通配符
+      const copyFiles = (pattern, targetDir = '') => {
+        const files = globSync(pattern);
+        files.forEach(file => {
+          const fileName = basename(file);
+          const subDir = dirname(file).replace(/^src[\\/]/, '');
+          const targetPath = targetDir || subDir;
+          // 规范化路径，移除开头的 ./ 和多余的斜杠
+          const outputPath = targetPath
+            ? `${targetPath}/${fileName}`.replace(/^\.\//, '').replace(/\\/g, '/')
+            : fileName;
+
+          const content = fs.readFileSync(file,
+            /\.(png|jpg|jpeg|gif|webp|ico|svg)$/i.test(file) ? null : 'utf-8');
+
+          this.emitFile({
+            type: 'asset',
+            fileName: outputPath,
+            source: content
+          });
+        });
+      };
+
       // 复制 manifest.json
-      const manifestPath = resolve(__dirname, 'manifest.json');
-      const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
-      this.emitFile({
-        type: 'asset',
-        fileName: 'manifest.json',
-        source: manifestContent
-      });
+      copyFiles('manifest.json');
 
-      // 复制 options 的 HTML 和 CSS
-      const optionsHtmlPath = resolve(__dirname, 'src/options/index.html');
-      const optionsHtmlContent = fs.readFileSync(optionsHtmlPath, 'utf-8');
-      this.emitFile({
-        type: 'asset',
-        fileName: 'options/index.html',
-        source: optionsHtmlContent
-      });
+      // 复制 HTML 文件
+      copyFiles('src/options/**/*.html');
 
-      const optionsCssPath = resolve(__dirname, 'src/options/options.css');
-      const optionsCssContent = fs.readFileSync(optionsCssPath, 'utf-8');
-      this.emitFile({
-        type: 'asset',
-        fileName: 'options/options.css',
-        source: optionsCssContent
-      });
-
-      // 复制 popup 的 HTML 和 CSS
-      const popupHtmlPath = resolve(__dirname, 'src/options/popup/index.html');
-      const popupHtmlContent = fs.readFileSync(popupHtmlPath, 'utf-8');
-      this.emitFile({
-        type: 'asset',
-        fileName: 'popup/index.html',
-        source: popupHtmlContent
-      });
-
-      const popupCssPath = resolve(__dirname, 'src/options/popup/popup.css');
-      const popupCssContent = fs.readFileSync(popupCssPath, 'utf-8');
-      this.emitFile({
-        type: 'asset',
-        fileName: 'popup/popup.css',
-        source: popupCssContent
-      });
+      // 复制 CSS 文件
+      copyFiles('src/options/**/*.css');
 
       // 复制图标文件
-      const iconSizes = ['16', '48', '128'];
-      iconSizes.forEach(size => {
-        const iconPath = resolve(__dirname, `src/assets/icons/icon${size}.png`);
-        const iconContent = fs.readFileSync(iconPath);
-        this.emitFile({
-          type: 'asset',
-          fileName: `icons/icon${size}.png`,
-          source: iconContent
-        });
-      });
+      copyFiles('src/assets/icons/*.png', 'icons');
+
+      // 如果有其他类型的文件也需要复制，可以在这里添加
+      // 例如：复制字体文件
+      // copyFiles('src/assets/fonts/*.*', 'assets/fonts');
     }
   });
 

@@ -1,17 +1,25 @@
 :root {
-  --primary-color: #4285f4;
-  --hover-color: #3367d6;
-  --success-color: #0f9d58;
-  --error-color: #ea4335;
-  --border-color: #ddd;
-  --background-color: #f8f9fa;
+  --primary-color: #1976d2;
+  --primary-light: #4791db;
+  --primary-dark: #115293;
+  --secondary-color: #f50057;
+  --success-color: #4caf50;
+  --error-color: #f44336;
+  --warning-color: #ff9800;
+  --info-color: #2196f3;
+  --background-color: #f5f5f5;
+  --paper-color: #ffffff;
+  --text-primary: rgba(0, 0, 0, 0.87);
+  --text-secondary: rgba(0, 0, 0, 0.6);
+  --border-color: rgba(0, 0, 0, 0.12);
 }
 
 body {
-  font-family: 'Microsoft YaHei', sans-serif;
+  font-family: 'Roboto', 'Microsoft YaHei', sans-serif;
   margin: 0;
-  padding: 20px;
+  padding: 0;
   background-color: var(--background-color);
+  color: var(--text-primary);
 }
 
 .container {
@@ -415,4 +423,244 @@ button[type="button"]:hover {
   overflow-x: auto;
   font-family: monospace;
   white-space: pre-wrap;
+}
+
+/* 自定义 Material UI 样式增强 */
+.MuiPaper-root {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  transition: box-shadow 0.3s ease !important;
+}
+
+.MuiPaper-root:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+}
+
+.MuiAppBar-root {
+  background-color: var(--primary-color) !important;
+}
+
+.MuiCard-root {
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.MuiCard-root:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+.MuiListItemButton-root {
+  border-radius: 4px !important;
+  margin: 2px 8px !important;
+}
+
+.MuiListItemButton-root.Mui-selected {
+  background-color: rgba(25, 118, 210, 0.12) !important;
+  font-weight: 500 !important;
+}
+
+.MuiListItemButton-root.Mui-selected:hover {
+  background-color: rgba(25, 118, 210, 0.18) !important;
+}
+
+.MuiChip-root {
+  font-weight: 500 !important;
+  height: 24px !important;
+}
+
+.MuiChip-root.MuiChip-sizeSmall {
+  height: 20px !important;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* 规则卡片增强样式 */
+.rule-card-content {
+  padding: 16px !important;
+}
+
+.rule-domain {
+  font-weight: 500 !important;
+  color: var(--primary-dark) !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.rule-domain::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: var(--primary-color);
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.rule-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.rule-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.rule-section-title {
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  color: var(--text-secondary) !important;
+  margin-bottom: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.rule-section-title svg {
+  margin-right: 4px;
+  font-size: 16px;
+}
+
+.rule-pattern {
+  background-color: rgba(0, 0, 0, 0.03);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.875rem;
+  overflow-wrap: break-word;
+}
+
+.rule-pattern-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+/* 搜索栏增强 */
+.search-bar {
+  margin-bottom: 16px !important;
+  border-radius: 8px !important;
+}
+
+.search-input {
+  padding-left: 8px !important;
+}
+
+/* 域名列表增强 */
+.domain-list-container {
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.domain-list-title {
+  padding: 16px 16px 8px 16px !important;
+  font-weight: 500 !important;
+  color: var(--text-secondary) !important;
+}
+
+/* 表单样式增强 */
+.form-dialog {
+  border-radius: 12px !important;
+}
+
+.form-dialog-title {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+  padding: 16px 24px !important;
+}
+
+.form-dialog-content {
+  padding: 24px !important;
+}
+
+.form-field {
+  margin-bottom: 16px !important;
+}
+
+.form-field-label {
+  font-weight: 500 !important;
+  margin-bottom: 8px !important;
+}
+
+.form-actions {
+  padding: 16px 24px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+}
+
+/* 响应式调整 */
+@media (max-width: 960px) {
+  .responsive-container {
+    flex-direction: column !important;
+  }
+
+  .domain-list-paper {
+    width: 100% !important;
+    margin-right: 0 !important;
+    margin-bottom: 16px !important;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+/* 通知样式 */
+.MuiAlert-root {
+  border-radius: 8px !important;
+}
+
+.MuiAlert-standardSuccess {
+  background-color: rgba(76, 175, 80, 0.1) !important;
+  color: var(--success-color) !important;
+}
+
+.MuiAlert-standardError {
+  background-color: rgba(244, 67, 54, 0.1) !important;
+  color: var(--error-color) !important;
+}
+
+/* 空状态样式 */
+.empty-state {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 48px 24px !important;
+  color: var(--text-secondary) !important;
+}
+
+.empty-state svg {
+  font-size: 48px !important;
+  color: rgba(0, 0, 0, 0.2) !important;
+  margin-bottom: 16px !important;
 }

@@ -109,7 +109,6 @@ async function applyRules(tab) {
     }))[0].result;
     // 找到第一个匹配的规则
     for (const rule of rules) {
-      console.log('originalTitle', originalTitle);
       // 使用Rule.ts中的matches方法
       if (rule.matches(tab.url, originalTitle)) {
         console.log(`[Tab ${tabId}] 应用匹配的规则:`, rule);
@@ -133,7 +132,9 @@ async function applyRule(rule, tabId) {
       // 应用固定标题
       await chrome.scripting.executeScript({
         target: { tabId },
+        world: 'MAIN',
         func: (newTitle) => {
+          window._originalTabTitle = document.title;
           document.title = newTitle;
         },
         args: [applyRules.fixedTitle]
@@ -153,7 +154,6 @@ async function applyRule(rule, tabId) {
             const initialTitle = userFunc(originalTitle);
             if (typeof initialTitle === 'string') {
               window._originalTabTitle = originalTitle;
-              console.log('window._originalTabTitle', window._originalTabTitle);
               document.title = initialTitle;
               // 设置定时器每秒执行一次用户脚本
               window._titleTimer = setInterval(() => {

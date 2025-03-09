@@ -3,7 +3,9 @@ import {
   Paper,
   InputBase,
   IconButton,
-  Tooltip
+  Tooltip,
+  Box,
+  InputAdornment
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -23,39 +25,61 @@ export function SearchBar({ onSearch }) {
     onSearch('');
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      handleClear();
+    }
+  };
+
   return (
-    <Paper
-      component="form"
-      sx={{
-        p: '2px 4px',
-        display: 'flex',
-        alignItems: 'center',
-        width: '100%',
-        mb: 2
-      }}
-      onSubmit={e => e.preventDefault()}
-    >
+    <Box sx={{ width: '100%' }}>
       <InputBase
-        sx={{ ml: 1, flex: 1 }}
+        fullWidth
         placeholder="搜索规则..."
         value={searchTerm}
         onChange={e => handleSearch(e.target.value)}
+        onKeyDown={handleKeyDown}
+        className="search-input"
+        sx={{
+          px: 2,
+          py: 1,
+          borderRadius: 2,
+          backgroundColor: 'rgba(0, 0, 0, 0.03)',
+          '&:hover': {
+            backgroundColor: 'rgba(0, 0, 0, 0.05)',
+          },
+          '&.Mui-focused': {
+            backgroundColor: 'rgba(0, 0, 0, 0.05)',
+            boxShadow: '0 0 0 2px rgba(25, 118, 210, 0.2)'
+          }
+        }}
+        startAdornment={
+          <InputAdornment position="start">
+            <SearchIcon color="action" fontSize="small" />
+          </InputAdornment>
+        }
+        endAdornment={
+          searchTerm && (
+            <InputAdornment position="end">
+              <Tooltip title="清除搜索">
+                <IconButton
+                  size="small"
+                  onClick={handleClear}
+                  edge="end"
+                  sx={{
+                    color: 'text.secondary',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                    }
+                  }}
+                >
+                  <ClearIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </InputAdornment>
+          )
+        }
       />
-      {searchTerm && (
-        <Tooltip title="清除">
-          <IconButton
-            size="small"
-            onClick={handleClear}
-          >
-            <ClearIcon />
-          </IconButton>
-        </Tooltip>
-      )}
-      <Tooltip title="搜索">
-        <IconButton type="submit" sx={{ p: '10px' }}>
-          <SearchIcon />
-        </IconButton>
-      </Tooltip>
-    </Paper>
+    </Box>
   );
 }
