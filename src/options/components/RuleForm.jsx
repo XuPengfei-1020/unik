@@ -26,6 +26,7 @@ import {
   CodeIcon,
   TitleIcon
 } from './icons';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { TitleRule } from '../../models/Rule';
 
 // 自定义样式组件
@@ -78,6 +79,14 @@ const StyledSwitch = styled(Switch)(({ theme }) => ({
     })
   }
 }));
+
+const HelpIcon = styled(HelpOutlineIcon)({
+  fontSize: '16px',
+  marginLeft: '4px',
+  color: 'rgba(0, 0, 0, 0.54)',
+  verticalAlign: 'middle',
+  cursor: 'help'
+});
 
 const defaultRule = {
   id: crypto.randomUUID(),
@@ -255,7 +264,7 @@ export function RuleForm({ open, rule, onSave, onClose, existingTags = [] }) {
           <Stack spacing={3} sx={{ pt: 1 }}>
             {/* 域名输入 */}
             <StyledTextField
-              label="域名"
+              label="生效域名"
               value={formData.domain}
               onChange={e => setFormData(prev => ({ ...prev, domain: e.target.value }))}
               required
@@ -264,88 +273,99 @@ export function RuleForm({ open, rule, onSave, onClose, existingTags = [] }) {
             />
 
             {/* 标签输入 */}
-            <Autocomplete
-              multiple
-              freeSolo
-              options={existingTags}
-              value={formData.tags}
-              onChange={(e, newValue) => setFormData(prev => ({ ...prev, tags: newValue }))}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <Chip
-                    label={option}
-                    {...getTagProps({ index })}
-                    size="small"
+            <Box component="div" sx={{ position: 'relative' }}>
+              <Autocomplete
+                multiple
+                freeSolo
+                options={existingTags}
+                value={formData.tags}
+                onChange={(e, newValue) => setFormData(prev => ({ ...prev, tags: newValue }))}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      label={option}
+                      {...getTagProps({ index })}
+                      size="small"
+                    />
+                  ))
+                }
+                renderInput={(params) => (
+                  <StyledTextField
+                    {...params}
+                    label={
+                      <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
+                        标签
+                        <Tooltip title="可选，用于规则分类筛选">
+                          <HelpIcon />
+                        </Tooltip>
+                      </Box>
+                    }
+                    placeholder="输入标签后按回车添加"
                   />
-                ))
-              }
-              renderInput={(params) => (
-                <StyledTextField
-                  {...params}
-                  label="标签"
-                  placeholder="输入标签后按回车添加"
-                  helperText="可选，用于分类和筛选规则"
-                />
-              )}
-            />
+                )}
+              />
+            </Box>
 
             {/* 标题匹配规则 */}
-            <Box>
-              <Typography variant="subtitle2" gutterBottom color="textSecondary">
-                标题匹配规则
-              </Typography>
-              <StyledTextField
-                fullWidth
-                placeholder="输入标题匹配模式"
-                value={formData.matchRules.titlePattern.pattern}
-                onChange={e => setFormData(prev => ({
-                  ...prev,
-                  matchRules: {
-                    ...prev.matchRules,
-                    titlePattern: {
-                      ...prev.matchRules.titlePattern,
-                      pattern: e.target.value
-                    }
+            <StyledTextField
+              label={
+                <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
+                  当原标题包含：
+                  <Tooltip title="留空则全匹配">
+                    <HelpIcon />
+                  </Tooltip>
+                </Box>
+              }
+              fullWidth
+              value={formData.matchRules.titlePattern.pattern}
+              onChange={e => setFormData(prev => ({
+                ...prev,
+                matchRules: {
+                  ...prev.matchRules,
+                  titlePattern: {
+                    ...prev.matchRules.titlePattern,
+                    pattern: e.target.value
                   }
-                }))}
-                InputProps={{
-                  endAdornment: renderMatchOptions('titlePattern')
-                }}
-              />
-            </Box>
+                }
+              }))}
+              InputProps={{
+                endAdornment: renderMatchOptions('titlePattern')
+              }}
+            />
 
             {/* URL匹配规则 */}
-            <Box>
-              <Typography variant="subtitle2" gutterBottom color="textSecondary">
-                URL匹配规则
-              </Typography>
-              <StyledTextField
-                fullWidth
-                placeholder="输入URL匹配模式"
-                value={formData.matchRules.urlPattern.pattern}
-                onChange={e => setFormData(prev => ({
-                  ...prev,
-                  matchRules: {
-                    ...prev.matchRules,
-                    urlPattern: {
-                      ...prev.matchRules.urlPattern,
-                      pattern: e.target.value
-                    }
+            <StyledTextField
+              label={
+                <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
+                  当网址URL包含：
+                  <Tooltip title="留空则全匹配">
+                    <HelpIcon />
+                  </Tooltip>
+                </Box>
+              }
+              fullWidth
+              value={formData.matchRules.urlPattern.pattern}
+              onChange={e => setFormData(prev => ({
+                ...prev,
+                matchRules: {
+                  ...prev.matchRules,
+                  urlPattern: {
+                    ...prev.matchRules.urlPattern,
+                    pattern: e.target.value
                   }
-                }))}
-                InputProps={{
-                  endAdornment: renderMatchOptions('urlPattern')
-                }}
-              />
-            </Box>
+                }
+              }))}
+              InputProps={{
+                endAdornment: renderMatchOptions('urlPattern')
+              }}
+            />
 
             {/* 标题更新方式 */}
             <Box>
               <Stack
                 direction="row"
                 alignItems="center"
-                justifyContent="flex-end"
-                spacing={1}
+                justifyContent="space-between"
                 sx={{ mb: 1 }}
               >
                 <FormControlLabel
@@ -356,43 +376,25 @@ export function RuleForm({ open, rule, onSave, onClose, existingTags = [] }) {
                       size="small"
                     />
                   }
-                  label={
-                    <Stack direction="row" spacing={0.5} alignItems="center">
-                      {useScript ? <CodeIcon fontSize="small" /> : <TitleIcon fontSize="small" />}
-                    </Stack>
-                  }
+                  label="使用 JavaScript 脚本"
                 />
               </Stack>
 
-              {useScript ? (
-                <StyledTextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  placeholder="输入JavaScript代码来处理标题"
-                  value={formData.applyRules.titleScript || ''}
-                  onChange={e => setFormData(prev => ({
-                    ...prev,
-                    applyRules: {
-                      ...prev.applyRules,
-                      titleScript: e.target.value
-                    }
-                  }))}
-                />
-              ) : (
-                <StyledTextField
-                  fullWidth
-                  placeholder="输入要替换的固定标题"
-                  value={formData.applyRules.fixedTitle}
-                  onChange={e => setFormData(prev => ({
-                    ...prev,
-                    applyRules: {
-                      ...prev.applyRules,
-                      fixedTitle: e.target.value
-                    }
-                  }))}
-                />
-              )}
+              <StyledTextField
+                fullWidth
+                label="则把网址标题更改为："
+                multiline={useScript}
+                rows={useScript ? 4 : 1}
+                placeholder={useScript ? "输入JavaScript代码来处理标题" : "输入要替换的固定标题"}
+                value={useScript ? (formData.applyRules.titleScript || '') : formData.applyRules.fixedTitle}
+                onChange={e => setFormData(prev => ({
+                  ...prev,
+                  applyRules: {
+                    ...prev.applyRules,
+                    [useScript ? 'titleScript' : 'fixedTitle']: e.target.value
+                  }
+                }))}
+              />
             </Box>
           </Stack>
         </form>
