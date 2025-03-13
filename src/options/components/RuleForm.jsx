@@ -124,6 +124,34 @@ const matchOptionButtons = [
   }
 ];
 
+// 添加新的样式组件
+const IconGroup = styled('div')({
+  display: 'flex',
+  gap: '2px',
+  alignItems: 'center'
+});
+
+const IconWrapper = styled('div')(({ theme, selected }) => ({
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '4px',
+  borderRadius: '4px',
+  transition: 'all 0.2s',
+  backgroundColor: 'rgba(0, 0, 0, 0.08)',
+  '&:hover': {
+    backgroundColor: 'rgba(0, 0, 0, 0.12)'
+  },
+  ...(selected && {
+    backgroundColor: 'rgba(25, 118, 210, 0.12)',
+    color: '#1976d2',
+    '&:hover': {
+      backgroundColor: 'rgba(25, 118, 210, 0.2)'
+    }
+  })
+}));
+
 export function RuleForm({ open, rule, onSave, onClose, existingTags = [] }) {
   const [formData, setFormData] = useState(rule || defaultRule);
   const [useScript, setUseScript] = useState(false);
@@ -180,24 +208,18 @@ export function RuleForm({ open, rule, onSave, onClose, existingTags = [] }) {
 
   const renderMatchOptions = (pattern) => (
     <InputAdornment position="end">
-      <Stack direction="row" spacing={0}>
+      <IconGroup>
         {matchOptionButtons.map(({ value, icon, tooltip }) => (
           <Tooltip key={value} title={tooltip}>
-            <IconButton
-              size="medium"
-              color={formData.matchRules[pattern][value] ? 'primary' : 'default'}
+            <IconWrapper
+              selected={formData.matchRules[pattern][value]}
               onClick={() => handlePatternOptionsChange(pattern, value)}
-              sx={{
-                '&.MuiIconButton-root': {
-                  marginRight: -1
-                }
-              }}
             >
               {icon}
-            </IconButton>
+            </IconWrapper>
           </Tooltip>
         ))}
-      </Stack>
+      </IconGroup>
     </InputAdornment>
   );
 

@@ -12,6 +12,7 @@ const commonConfig = {
     outDir: 'dist',
     emptyOutDir: true,
     clean: true,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       input: {
         options: resolve(__dirname, 'src/options/index.jsx'),
