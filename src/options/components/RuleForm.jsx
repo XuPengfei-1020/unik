@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -44,12 +44,17 @@ const StyledDialogTitle = styled(DialogTitle)(({ theme }) => ({
 const StyledTextField = styled(TextField)(({ theme }) => ({
   '& .MuiInputBase-root': {
     minHeight: 56
+  },
+  '& .MuiInputLabel-root': {
+    '&:not(.MuiInputLabel-shrink)': {
+      transform: 'translate(14px, -9px) scale(0.75)'
+    }
   }
 }));
 
 const StyledSwitch = styled(Switch)(({ theme }) => ({
-  width: 42,
-  height: 26,
+  width: 32,
+  height: 16,
   padding: 0,
   '& .MuiSwitch-switchBase': {
     padding: 0,
@@ -67,11 +72,11 @@ const StyledSwitch = styled(Switch)(({ theme }) => ({
   },
   '& .MuiSwitch-thumb': {
     boxSizing: 'border-box',
-    width: 22,
-    height: 22
+    width: 12,
+    height: 12
   },
   '& .MuiSwitch-track': {
-    borderRadius: 26 / 2,
+    borderRadius: 16 / 2,
     backgroundColor: theme.palette.grey[400],
     opacity: 1,
     transition: theme.transitions.create(['background-color'], {
@@ -361,41 +366,54 @@ export function RuleForm({ open, rule, onSave, onClose, existingTags = [] }) {
             />
 
             {/* 标题更新方式 */}
-            <Box>
-              <Stack
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-                sx={{ mb: 1 }}
-              >
-                <FormControlLabel
-                  control={
-                    <StyledSwitch
-                      checked={useScript}
-                      onChange={(e) => setUseScript(e.target.checked)}
-                      size="small"
-                    />
-                  }
-                  label="使用 JavaScript 脚本"
-                />
-              </Stack>
-
-              <StyledTextField
-                fullWidth
-                label="则把网址标题更改为："
-                multiline={useScript}
-                rows={useScript ? 4 : 1}
-                placeholder={useScript ? "输入JavaScript代码来处理标题" : "输入要替换的固定标题"}
-                value={useScript ? (formData.applyRules.titleScript || '') : formData.applyRules.fixedTitle}
-                onChange={e => setFormData(prev => ({
-                  ...prev,
-                  applyRules: {
-                    ...prev.applyRules,
-                    [useScript ? 'titleScript' : 'fixedTitle']: e.target.value
-                  }
-                }))}
-              />
-            </Box>
+            <StyledTextField
+              fullWidth
+              label={
+                <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                  则把网址标题更改为：
+                  <FormControlLabel
+                    sx={{
+                      margin: 0,
+                      '& .MuiFormControlLabel-label': {
+                        fontSize: '0.75rem',
+                        color: 'rgba(0, 0, 0, 0.6)',
+                        marginLeft: '8px'
+                      }
+                    }}
+                    labelPlacement="end"
+                    label={
+                      <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
+                        使用 JavaScript
+                        <Tooltip title="可以通过写一个 JS function 来修改标题。此 Function 入参为网站的原始标题，返回值为修改后的标题，返回值必须是 String 类型，方法内可访问 document 对象">
+                          <HelpIcon />
+                        </Tooltip>
+                      </Box>
+                    }
+                    control={
+                      <StyledSwitch
+                        checked={useScript}
+                        onChange={(e) => setUseScript(e.target.checked)}
+                        size="small"
+                      />
+                    }
+                  />
+                </Box>
+              }
+              InputLabelProps={{
+                shrink: true
+              }}
+              multiline={useScript}
+              rows={useScript ? 4 : 1}
+              placeholder={useScript ? "eg: (originalTitle) => originalTitle + '😊😊😊'" : "可以将标题替换为emoj哦，比如😊😊😊"}
+              value={useScript ? (formData.applyRules.titleScript || '') : formData.applyRules.fixedTitle}
+              onChange={e => setFormData(prev => ({
+                ...prev,
+                applyRules: {
+                  ...prev.applyRules,
+                  [useScript ? 'titleScript' : 'fixedTitle']: e.target.value
+                }
+              }))}
+            />
           </Stack>
         </form>
       </DialogContent>
