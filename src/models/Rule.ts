@@ -170,13 +170,16 @@ export class MatchRules {
 export class ApplyRules {
   fixedTitle: string;
   titleScript: string | null;
+  interval: number;
 
   constructor({
     fixedTitle = '',
-    titleScript = null
+    titleScript = null,
+    interval = 0
   } = {}) {
     this.fixedTitle = fixedTitle;
     this.titleScript = titleScript;
+    this.interval = interval;
   }
 
   static fromJSON(json) {
@@ -186,7 +189,8 @@ export class ApplyRules {
   toJSON() {
     return {
       fixedTitle: this.fixedTitle,
-      titleScript: this.titleScript
+      titleScript: this.titleScript,
+      interval: this.interval
     };
   }
 
@@ -198,6 +202,9 @@ export class ApplyRules {
   validate(): { isValid: boolean; error?: string } {
     if (!this.fixedTitle && !this.titleScript) {
       return { isValid: false, error: '请输入固定标题或自定义脚本' };
+    }
+    if (this.titleScript && this.interval < 0) {
+      return { isValid: false, error: '循环执行间隔必须大于等于0' };
     }
     return { isValid: true };
   }

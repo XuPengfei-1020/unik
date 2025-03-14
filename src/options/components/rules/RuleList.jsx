@@ -2,7 +2,7 @@ import { Box, Typography } from '@mui/material';
 import { Info as InfoIcon } from '@mui/icons-material';
 import { RuleCard } from './RuleCard';
 
-export function RuleList({ rules, onEdit, onDelete }) {
+export function RuleList({ rules, onEdit, onDelete, onToggleEnabled }) {
   if (!rules.length) {
     return (
       <Box className="empty-state" sx={{ p: 3, textAlign: 'center' }}>
@@ -25,6 +25,9 @@ export function RuleList({ rules, onEdit, onDelete }) {
           rule={rule}
           onEdit={onEdit}
           onDelete={onDelete}
+          onToggleEnabled={onToggleEnabled}
+          showInterval={rule.applyRules.titleScript && rule.applyRules.interval > 0}
+          interval={rule.applyRules.interval}
         />
       ))}
     </Box>

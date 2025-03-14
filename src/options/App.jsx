@@ -12,7 +12,8 @@ export function App() {
     error: rulesError,
     saveRule,
     deleteRule,
-    getDomains
+    getDomains,
+    toggleRuleEnabled
   } = useRules();
 
   const [selectedDomain, setSelectedDomain] = useState('');
@@ -122,6 +123,7 @@ export function App() {
           setEditingRule(null);
           setShowForm(true);
         }}
+        onToggleEnabled={toggleRuleEnabled}
       />
 
       <RuleForm

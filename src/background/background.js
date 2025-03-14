@@ -144,7 +144,7 @@ async function applyRule(rule, tabId) {
       await chrome.scripting.executeScript({
         target: { tabId },
         world: 'MAIN',
-        func: (script) => {
+        func: (script, interval) => {
           try {
             console.debug('脚本内容', script);
             // 执行用户的脚本
@@ -155,24 +155,26 @@ async function applyRule(rule, tabId) {
             if (typeof initialTitle === 'string') {
               window._originalTabTitle = originalTitle;
               document.title = initialTitle;
-              // 设置定时器每秒执行一次用户脚本
-              window._titleTimer = setInterval(() => {
-                try {
-                  const newTitle = userFunc(originalTitle);
-                  if (typeof newTitle === 'string') {
-                    document.title = newTitle;
+              // 如果设置了循环执行间隔，则设置定时器
+              if (interval > 0) {
+                window._titleTimer = setInterval(() => {
+                  try {
+                    const newTitle = userFunc(originalTitle);
+                    if (typeof newTitle === 'string') {
+                      document.title = newTitle;
+                    }
+                    else {
+                      throw new Error('用户脚本返回值不是字符串');
+                    }
+                  } catch (e) {
+                    console.error('更新标题错误:', e);
+                    if (window._titleTimer) {
+                      clearInterval(window._titleTimer);
+                      window._titleTimer = null;
+                    }
                   }
-                  else {
-                    throw new Error('用户脚本返回值不是字符串');
-                  }
-                } catch (e) {
-                  console.error('更新标题错误:', e);
-                  if (window._titleTimer) {
-                    clearInterval(window._titleTimer);
-                    window._titleTimer = null;
-                  }
-                }
-              }, 1000);
+                }, interval * 1000); // 转换为毫秒
+              }
             } else {
               console.error('用户脚本返回值不是字符串');
             }
@@ -180,7 +182,7 @@ async function applyRule(rule, tabId) {
             console.error('执行脚本错误:', e);
           }
         },
-        args: [applyRules.titleScript]
+        args: [applyRules.titleScript, applyRules.interval]
       });
     }
   } catch (err) {

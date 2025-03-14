@@ -24,7 +24,8 @@ export function MainContent({
   onSearch,
   onEdit,
   onDelete,
-  onAddRule
+  onAddRule,
+  onToggleEnabled
 }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -196,6 +197,7 @@ export function MainContent({
                 rules={rules}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onToggleEnabled={onToggleEnabled}
               />
             </ScrollableBox>
           </Paper>

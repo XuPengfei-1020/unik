@@ -82,6 +82,18 @@ export function useRules() {
     return Array.from(domains);
   }, [rules]);
 
+  const toggleRuleEnabled = useCallback(async (id, enabled) => {
+    const newRules = rules.map(rule => {
+      if (rule.id === id) {
+        return { ...rule, enabled };
+      }
+      return rule;
+    });
+    // 将规则转换为 TitleRule 实例并保存到 storage
+    const titleRules = newRules.map(r => TitleRule.fromJSON(r));
+    await setRules(titleRules.map(r => r.toJSON()));
+  }, [rules, setRules]);
+
   return {
     rules,
     loading,
@@ -89,6 +101,7 @@ export function useRules() {
     saveRule,
     deleteRule,
     validateRule,
-    getDomains
+    getDomains,
+    toggleRuleEnabled
   };
 }

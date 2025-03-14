@@ -3,7 +3,9 @@ import {
   IconButton,
   Chip,
   Box,
-  Tooltip
+  Tooltip,
+  Switch,
+  FormControlLabel
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -11,7 +13,8 @@ import {
   Code as CodeIcon,
   Title as TitleIcon,
   Label as LabelIcon,
-  ContentCopy as CopyIcon
+  ContentCopy as CopyIcon,
+  Loop as LoopIcon
 } from '@mui/icons-material';
 import {
   RegexIcon,
@@ -101,7 +104,50 @@ const RuleContent = styled(Box)(({ isScript }) => ({
   }
 }));
 
-export function RuleCard({ rule, onEdit, onDelete }) {
+// 添加新的样式组件
+const StyledSwitch = styled(Switch)(({ theme }) => ({
+  width: 32,
+  height: 16,
+  padding: 0,
+  '& .MuiSwitch-switchBase': {
+    padding: 0,
+    margin: 2,
+    transitionDuration: '300ms',
+    '&.Mui-checked': {
+      transform: 'translateX(16px)',
+      color: '#fff',
+      '& + .MuiSwitch-track': {
+        backgroundColor: theme.palette.primary.main,
+        opacity: 1,
+        border: 0
+      }
+    }
+  },
+  '& .MuiSwitch-thumb': {
+    boxSizing: 'border-box',
+    width: 12,
+    height: 12
+  },
+  '& .MuiSwitch-track': {
+    borderRadius: 16 / 2,
+    backgroundColor: theme.palette.grey[400],
+    opacity: 1,
+    transition: theme.transitions.create(['background-color'], {
+      duration: 500
+    })
+  }
+}));
+
+const StyledFormControlLabel = styled(FormControlLabel)(({ theme }) => ({
+  margin: 0,
+  '& .MuiFormControlLabel-label': {
+    fontSize: '0.75rem',
+    color: 'rgba(0, 0, 0, 0.6)',
+    marginLeft: '8px'
+  }
+}));
+
+export function RuleCard({ rule, onEdit, onDelete, showInterval, interval, onToggleEnabled }) {
   // 确保 tags 是数组
   const tags = Array.isArray(rule.tags) ? rule.tags : [];
   const [isOverflow, setIsOverflow] = React.useState(false);
@@ -167,7 +213,18 @@ export function RuleCard({ rule, onEdit, onDelete }) {
             ))}
           </Box>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1, ml: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, ml: 1, alignItems: 'center' }}>
+          <StyledFormControlLabel
+            label={rule.enabled ? '启用' : '关闭'}
+            labelPlacement="end"
+            control={
+              <StyledSwitch
+                checked={rule.enabled}
+                onChange={() => onToggleEnabled(rule.id, !rule.enabled)}
+                size="small"
+              />
+            }
+          />
           <Tooltip title="编辑规则">
             <ActionLink onClick={() => onEdit(rule)}>
               <EditIcon />
@@ -281,6 +338,14 @@ export function RuleCard({ rule, onEdit, onDelete }) {
                 则执行 Javascript 生成网址标题：
               </Box>
               <CodeIcon fontSize="small" sx={{ ml: 0.5, color: 'info.main' }} />
+              {showInterval && (
+                <Box sx={{ display: 'inline-flex', alignItems: 'center', ml: 0.5 }}>
+                  <LoopIcon fontSize="small" sx={{ color: 'info.main', mr: 0.5 }} />
+                  <Typography variant="body2" sx={{ color: 'info.main' }}>
+                    {interval}秒/一次
+                  </Typography>
+                </Box>
+              )}
               <Tooltip title="复制内容">
                 <IconButton
                   size="small"

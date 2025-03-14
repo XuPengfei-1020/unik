@@ -27,6 +27,7 @@ import {
   TitleIcon
 } from '../icons';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import LoopIcon from '@mui/icons-material/Loop';
 import { TitleRule } from '../../../models/Rule';
 
 // 自定义样式组件
@@ -113,7 +114,8 @@ const defaultRule = {
   },
   applyRules: {
     fixedTitle: '',
-    titleScript: null
+    titleScript: null,
+    interval: 0
   },
   enabled: true,
   createTime: Date.now()
@@ -169,15 +171,18 @@ const IconWrapper = styled('div')(({ theme, selected }) => ({
 export function RuleForm({ open, rule, onSave, onClose, existingTags = [] }) {
   const [formData, setFormData] = useState(rule || defaultRule);
   const [useScript, setUseScript] = useState(false);
+  const [useInterval, setUseInterval] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (rule) {
       setFormData(rule);
       setUseScript(!!rule.applyRules.titleScript);
+      setUseInterval(rule.applyRules.interval > 0);
     } else {
       setFormData(defaultRule);
       setUseScript(false);
+      setUseInterval(false);
     }
   }, [rule]);
 
@@ -202,7 +207,8 @@ export function RuleForm({ open, rule, onSave, onClose, existingTags = [] }) {
       ...formData,
       applyRules: {
         fixedTitle: useScript ? '' : formData.applyRules.fixedTitle,
-        titleScript: useScript ? formData.applyRules.titleScript : null
+        titleScript: useScript ? formData.applyRules.titleScript : null,
+        interval: useInterval ? formData.applyRules.interval : 0
       }
     });
 
@@ -366,11 +372,64 @@ export function RuleForm({ open, rule, onSave, onClose, existingTags = [] }) {
             />
 
             {/* 标题更新方式 */}
-            <StyledTextField
-              fullWidth
-              label={
-                <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-                  则把网页标题更改为：
+            <Box>
+              <StyledTextField
+                fullWidth
+                label={
+                  <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                    则把网页标题更改为：
+                    <FormControlLabel
+                      sx={{
+                        margin: 0,
+                        '& .MuiFormControlLabel-label': {
+                          fontSize: '0.75rem',
+                          color: 'rgba(0, 0, 0, 0.6)',
+                          marginLeft: '8px'
+                        }
+                      }}
+                      labelPlacement="end"
+                      label={
+                        <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
+                          使用 JavaScript
+                          <Tooltip title="可以通过写一个 JS function 来修改标题。此 Function 入参为网站的原始标题，返回值为修改后的标题，返回值必须是 String 类型，方法内可访问 document 对象">
+                            <HelpIcon />
+                          </Tooltip>
+                        </Box>
+                      }
+                      control={
+                        <StyledSwitch
+                          checked={useScript}
+                          onChange={(e) => setUseScript(e.target.checked)}
+                          size="small"
+                        />
+                      }
+                    />
+                  </Box>
+                }
+                InputLabelProps={{
+                  shrink: true
+                }}
+                multiline={useScript}
+                rows={useScript ? 4 : 1}
+                placeholder={useScript ? "eg: (originalTitle) => originalTitle + '😊😊😊'" : "可以将标题替换为emoj哦，比如😊😊😊"}
+                value={useScript ? (formData.applyRules.titleScript || '') : formData.applyRules.fixedTitle}
+                onChange={e => setFormData(prev => ({
+                  ...prev,
+                  applyRules: {
+                    ...prev.applyRules,
+                    [useScript ? 'titleScript' : 'fixedTitle']: e.target.value
+                  }
+                }))}
+              />
+              {useScript && (
+                <Box sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  mt: 1,
+                  gap: 1,
+                  px: 1
+                }}>
                   <FormControlLabel
                     sx={{
                       margin: 0,
@@ -383,37 +442,65 @@ export function RuleForm({ open, rule, onSave, onClose, existingTags = [] }) {
                     labelPlacement="end"
                     label={
                       <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
-                        使用 JavaScript
-                        <Tooltip title="可以通过写一个 JS function 来修改标题。此 Function 入参为网站的原始标题，返回值为修改后的标题，返回值必须是 String 类型，方法内可访问 document 对象">
-                          <HelpIcon />
-                        </Tooltip>
+                        <LoopIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                        循环执行
                       </Box>
                     }
                     control={
                       <StyledSwitch
-                        checked={useScript}
-                        onChange={(e) => setUseScript(e.target.checked)}
+                        checked={useInterval}
+                        onChange={(e) => {
+                          setUseInterval(e.target.checked);
+                          if (!e.target.checked) {
+                            setFormData(prev => ({
+                              ...prev,
+                              applyRules: {
+                                ...prev.applyRules,
+                                interval: 0
+                              }
+                            }));
+                          } else {
+                            setFormData(prev => ({
+                              ...prev,
+                              applyRules: {
+                                ...prev.applyRules,
+                                interval: 1
+                              }
+                            }));
+                          }
+                        }}
                         size="small"
                       />
                     }
                   />
+                  {useInterval && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <TextField
+                        size="small"
+                        type="number"
+                        value={formData.applyRules.interval}
+                        onChange={e => {
+                          const value = Math.max(1, Number(e.target.value));
+                          setFormData(prev => ({
+                            ...prev,
+                            applyRules: {
+                              ...prev.applyRules,
+                              interval: value
+                            }
+                          }));
+                        }}
+                        InputProps={{
+                          sx: { width: 100 }
+                        }}
+                      />
+                      <Typography variant="body2" color="text.secondary">
+                        秒/一次
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
-              }
-              InputLabelProps={{
-                shrink: true
-              }}
-              multiline={useScript}
-              rows={useScript ? 4 : 1}
-              placeholder={useScript ? "eg: (originalTitle) => originalTitle + '😊😊😊'" : "可以将标题替换为emoj哦，比如😊😊😊"}
-              value={useScript ? (formData.applyRules.titleScript || '') : formData.applyRules.fixedTitle}
-              onChange={e => setFormData(prev => ({
-                ...prev,
-                applyRules: {
-                  ...prev.applyRules,
-                  [useScript ? 'titleScript' : 'fixedTitle']: e.target.value
-                }
-              }))}
-            />
+              )}
+            </Box>
           </Stack>
         </form>
       </DialogContent>
