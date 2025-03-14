@@ -93,13 +93,12 @@ export default defineConfig(({ command, mode }) => {
 
       // 复制 HTML 文件
       copyFiles('src/options/**/*.html');
-
+      // 复制 JS 文件
+      copyFiles('src/options/**/*.js');
       // 复制 CSS 文件
       copyFiles('src/options/**/*.css');
-
       // 复制图标文件
       copyFiles('src/assets/icons/*.png', 'icons');
-
       // 如果有其他类型的文件也需要复制，可以在这里添加
       // 例如：复制字体文件
       // copyFiles('src/assets/fonts/*.*', 'assets/fonts');
