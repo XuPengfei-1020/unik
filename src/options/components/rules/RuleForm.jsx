@@ -25,9 +25,9 @@ import {
   WholeWordIcon,
   CodeIcon,
   TitleIcon
-} from './icons';
+} from '../icons';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import { TitleRule } from '../../models/Rule';
+import { TitleRule } from '../../../models/Rule';
 
 // 自定义样式组件
 const StyledDialogTitle = styled(DialogTitle)(({ theme }) => ({
