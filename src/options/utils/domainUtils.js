@@ -37,7 +37,7 @@ export async function getDomainIcon(domain) {
         return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
       }
     } catch (error) {
-      console.log('Failed to fetch domain icon:', error);
+      console.debug('Failed to fetch domain icon:', error);
     }
   } finally {
     clearTimeout(timeoutId);

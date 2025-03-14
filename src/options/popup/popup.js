@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       chrome.storage.sync.set({ 'titleRules': rules }, () => {
-        console.log('规则已保存:', newRule);
+        console.debug('规则已保存:', newRule);
         showSaveSuccess();
       });
     });

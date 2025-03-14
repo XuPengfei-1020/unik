@@ -67,7 +67,7 @@ export function App() {
 
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-      console.log(rule);
+      console.debug(rule);
       return (
         rule.domain.toLowerCase().includes(searchLower) ||
         (Array.isArray(rule.tags) && rule.tags.some(tag => tag.toLowerCase().includes(searchLower))) ||

@@ -35,7 +35,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
   // 清理标签页的规则状态
   if (tabRuleMap.has(tabId)) {
-    console.log(`标签页 ${tabId} 关闭，清理规则状态`);
+    console.debug(`标签页 ${tabId} 关闭，清理规则状态`);
     tabRuleMap.delete(tabId);
   }
 });
@@ -66,7 +66,7 @@ async function handleRulesChange(oldRules, newRules) {
       return; // 没有需要处理的变化
     }
 
-    console.log('规则变化 - 删除:', deletedRules, '新增:', addedRules);
+    console.debug('规则变化 - 删除:', deletedRules, '新增:', addedRules);
 
     // 获取所有标签页
     const tabs = (await chrome.tabs.query({}))
@@ -76,11 +76,11 @@ async function handleRulesChange(oldRules, newRules) {
     for (const tab of tabs) {
       const currentRule = tabRuleMap.get(tab.id);
       if (currentRule && deletedRules.some(rule => rule.id === currentRule.id)) {
-        console.log(`清除标签页 ${tab.id} 的规则:`, currentRule);
+        console.debug(`清除标签页 ${tab.id} 的规则:`, currentRule);
         await clearRule(tab);
       }
       else {
-        console.log(`标签页 ${tab.id} 没有需要清除的规则`);
+        console.debug(`标签页 ${tab.id} 没有需要清除的规则`);
       }
     }
 
@@ -111,7 +111,7 @@ async function applyRules(tab) {
     for (const rule of rules) {
       // 使用Rule.ts中的matches方法
       if (rule.matches(tab.url, originalTitle)) {
-        console.log(`[Tab ${tabId}] 应用匹配的规则:`, rule);
+        console.debug(`[Tab ${tabId}] 应用匹配的规则:`, rule);
         await applyRule(rule, tabId);
         break;
       }
@@ -146,7 +146,7 @@ async function applyRule(rule, tabId) {
         world: 'MAIN',
         func: (script) => {
           try {
-            console.log('脚本内容', script);
+            console.debug('脚本内容', script);
             // 执行用户的脚本
             const userFunc = (0, eval)(script);
             // 先立即执行一次
@@ -202,14 +202,14 @@ async function clearRule(tab) {
       world: 'MAIN',
       func: () => {
         // 清除定时器
-        console.log('清除定时器', window._titleTimer);
+        console.debug('清除定时器', window._titleTimer);
         if (window._titleTimer) {
           clearInterval(window._titleTimer);
           window._titleTimer = null;
         }
 
         // 还原原始标题
-        console.log('还原原始标题', window._originalTabTitle);
+        console.debug('还原原始标题', window._originalTabTitle);
         if (window._originalTabTitle) {
           document.title = window._originalTabTitle;
           window._originalTabTitle = null;
