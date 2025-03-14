@@ -1,9 +1,11 @@
-import { Box, Paper, Typography, useMediaQuery, useTheme, Button } from '@mui/material';
+import { Box, Paper, Typography, useMediaQuery, useTheme, Button, Tooltip } from '@mui/material';
 import { FilterList as FilterIcon, Add as AddIcon } from '@mui/icons-material';
 import { DomainList } from '../filter/DomainList';
 import { SearchBar } from '../filter/SearchBar';
 import { RuleList } from '../rules/RuleList';
 import { styled } from '@mui/material/styles';
+import { useEffect, useState } from 'react';
+import { getDomainIcon } from '../../utils/domainUtils';
 
 // 添加自定义滚动条样式
 const ScrollableBox = styled(Box)({
@@ -27,6 +29,20 @@ export function MainContent({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isWideScreen = useMediaQuery(theme.breakpoints.up('xl'));
+  const [domainIcon, setDomainIcon] = useState(null);
+
+  useEffect(() => {
+    const loadDomainIcon = async () => {
+      if (selectedDomain) {
+        const icon = await getDomainIcon(selectedDomain);
+        setDomainIcon(icon);
+      } else {
+        setDomainIcon(null);
+      }
+    };
+
+    loadDomainIcon();
+  }, [selectedDomain]);
 
   return (
     <Box sx={{
@@ -146,11 +162,31 @@ export function MainContent({
               }}
             >
               <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                规则列表 {rules.length > 0 && `(${rules.length})`}
+                替换规则 {rules.length > 0 && `(${rules.length})`}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {selectedDomain ? `当前筛选: ${selectedDomain}` : '显示所有规则'}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {(
+                  <>
+                    {domainIcon ? (
+                      <img
+                        src={domainIcon}
+                        alt={`${selectedDomain} icon`}
+                        style={{ width: 20, height: 20 }}
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        <Tooltip title={selectedDomain}>
+                          <span>
+                            {selectedDomain.length > 30
+                              ? `${selectedDomain.substring(0, 30)}...`
+                              : selectedDomain}
+                          </span>
+                        </Tooltip>
+                      </Typography>
+                    )}
+                  </>
+                )}
+              </Box>
             </Box>
             <ScrollableBox sx={{
               flex: 1,

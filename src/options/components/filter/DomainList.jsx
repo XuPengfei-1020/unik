@@ -8,15 +8,37 @@ import {
   Typography,
   Divider,
   Badge,
-  Box
+  Box,
+  Tooltip
 } from '@mui/material';
 import {
   Language as LanguageIcon,
   Public as PublicIcon,
   ArrowRight as ArrowRightIcon
 } from '@mui/icons-material';
+import { useEffect, useState } from 'react';
+import { getDomainIcon, sortDomains } from '../../utils/domainUtils';
 
 export function DomainList({ domains, selectedDomain, onDomainSelect }) {
+  const [domainIcons, setDomainIcons] = useState({});
+  const sortedDomains = sortDomains(domains);
+
+  useEffect(() => {
+    // 异步加载所有域名的图标
+    const loadDomainIcons = async () => {
+      const icons = {};
+      for (const domain of domains) {
+        const icon = await getDomainIcon(domain);
+        if (icon) {
+          icons[domain] = icon;
+        }
+      }
+      setDomainIcons(icons);
+    };
+
+    loadDomainIcons();
+  }, [domains]);
+
   return (
     <List sx={{ py: 0 }}>
       <ListItem disablePadding>
@@ -59,7 +81,7 @@ export function DomainList({ domains, selectedDomain, onDomainSelect }) {
 
       {domains.length > 0 && <Divider sx={{ my: 1 }} />}
 
-      {domains.map(domain => (
+      {sortedDomains.map((domain) => (
         <ListItem key={domain} disablePadding>
           <ListItemButton
             selected={domain === selectedDomain}
@@ -70,10 +92,15 @@ export function DomainList({ domains, selectedDomain, onDomainSelect }) {
             }}
           >
             <ListItemIcon sx={{ minWidth: 36 }}>
-              <LanguageIcon
-                fontSize="small"
-                color={domain === selectedDomain ? 'primary' : 'action'}
-              />
+              {domainIcons[domain] ? (
+                <img
+                  src={domainIcons[domain]}
+                  alt={`${domain} icon`}
+                  style={{ width: 24, height: 24 }}
+                />
+              ) : (
+                <LanguageIcon />
+              )}
             </ListItemIcon>
             <ListItemText
               primary={
