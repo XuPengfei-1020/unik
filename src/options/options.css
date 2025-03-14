@@ -252,7 +252,6 @@ button:hover {
 
 button[type="button"] {
   background-color: #f1f1f1;
-  color: #333;
 }
 
 button[type="button"]:hover {
@@ -504,12 +503,6 @@ button[type="button"]:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-}
-
-.rule-section {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .rule-section-title {
