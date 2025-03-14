@@ -18,23 +18,25 @@ export function MainContent({
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   return (
-    <Box>
+    <Box sx={{ width: '100%' }}>
       <Box
-        display="flex"
-        className="responsive-container"
-        sx={{ gap: 3 }}
+        sx={{
+          display: 'flex',
+          gap: 3,
+          width: '100%',
+          boxSizing: 'border-box'
+        }}
       >
         <Paper
           elevation={0}
-          className="domain-list-container domain-list-paper"
           sx={{
             width: isMobile ? '100%' : 280,
-            mb: isMobile ? 2 : 0
+            mb: isMobile ? 2 : 0,
+            flexShrink: 0
           }}
         >
           <Typography
             variant="subtitle1"
-            className="domain-list-title"
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -53,29 +55,32 @@ export function MainContent({
           />
         </Paper>
 
-        <Box flex={1}>
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                flex: 1,
-                p: 2,
-                borderRadius: 2
-              }}
-              className="search-bar"
-            >
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              mb: 2,
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2
+            }}
+          >
+            <Box sx={{ flex: 1, minWidth: 0 }}>
               <SearchBar onSearch={onSearch} />
-            </Paper>
+            </Box>
             <Button
               variant="contained"
-              color="secondary"
+              color="primary"
               startIcon={<AddIcon />}
               onClick={onAddRule}
               sx={{
-                borderRadius: '20px',
+                height: '45px',
                 px: 2,
                 backgroundColor: 'white',
                 color: 'primary.main',
+                flexShrink: 0,
                 '&:hover': {
                   backgroundColor: 'rgba(255, 255, 255, 0.9)',
                 }
@@ -83,7 +88,7 @@ export function MainContent({
             >
               添加规则
             </Button>
-          </Box>
+          </Paper>
 
           <Paper
             elevation={0}
