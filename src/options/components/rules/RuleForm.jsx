@@ -370,7 +370,7 @@ export function RuleForm({ open, rule, onSave, onClose, existingTags = [] }) {
               fullWidth
               label={
                 <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-                  则把网址标题更改为：
+                  则把网页标题更改为：
                   <FormControlLabel
                     sx={{
                       margin: 0,

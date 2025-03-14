@@ -15,21 +15,6 @@ export function AppLayout({ children }) {
       >
         {children}
       </Container>
-
-      <Box
-        component="footer"
-        sx={{
-          py: 2,
-          textAlign: 'center',
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          mt: 'auto'
-        }}
-      >
-        <Typography variant="body2" color="text.secondary">
-          标题规则管理 © {new Date().getFullYear()}
-        </Typography>
-      </Box>
     </Box>
   );
 }

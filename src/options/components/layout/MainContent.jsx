@@ -3,6 +3,16 @@ import { FilterList as FilterIcon, Add as AddIcon } from '@mui/icons-material';
 import { DomainList } from '../filter/DomainList';
 import { SearchBar } from '../filter/SearchBar';
 import { RuleList } from '../rules/RuleList';
+import { styled } from '@mui/material/styles';
+
+// 添加自定义滚动条样式
+const ScrollableBox = styled(Box)({
+  '&::-webkit-scrollbar': {
+    display: 'none'
+  },
+  scrollbarWidth: 'none',
+  msOverflowStyle: 'none'
+});
 
 export function MainContent({
   rules,
@@ -16,55 +26,78 @@ export function MainContent({
 }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isWideScreen = useMediaQuery(theme.breakpoints.up('xl'));
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{
+      width: '100%',
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      p: '10px 24px',
+      boxSizing: 'border-box'
+    }}>
       <Box
         sx={{
           display: 'flex',
           gap: 3,
+          flex: 1,
+          overflow: 'hidden',
           width: '100%',
-          boxSizing: 'border-box'
+          maxWidth: isWideScreen ? '1600px' : '1200px',
+          mx: 'auto'
         }}
       >
-        <Paper
-          elevation={0}
-          sx={{
-            width: isMobile ? '100%' : 280,
-            mb: isMobile ? 2 : 0,
-            flexShrink: 0
-          }}
-        >
-          <Typography
-            variant="subtitle1"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              px: 2,
-              py: 1.5,
-              borderColor: 'divider'
-            }}
-          >
-            <FilterIcon sx={{ mr: 1, fontSize: 20 }} />
-            域名筛选
-          </Typography>
-          <DomainList
-            domains={domains}
-            selectedDomain={selectedDomain}
-            onDomainSelect={onDomainSelect}
-          />
-        </Paper>
-
-        <Box sx={{ flex: 1, minWidth: 0 }}>
+        {!isMobile && (
           <Paper
             elevation={0}
             sx={{
-              p: 2,
-              mb: 2,
+              width: 280,
+              flexShrink: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              border: '1px solid',
+              borderColor: 'divider'
+            }}
+          >
+            <ScrollableBox sx={{
+              flex: 1,
+              overflow: 'auto',
+              pt: 1
+            }}>
+              <DomainList
+                domains={domains}
+                selectedDomain={selectedDomain}
+                onDomainSelect={onDomainSelect}
+              />
+            </ScrollableBox>
+          </Paper>
+        )}
+
+        <Box sx={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2
+        }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 1,
               borderRadius: 2,
               display: 'flex',
               alignItems: 'center',
-              gap: 2
+              gap: 2,
+              border: '1px solid',
+              borderColor: 'divider'
             }}
           >
             <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -94,7 +127,12 @@ export function MainContent({
             elevation={0}
             sx={{
               borderRadius: 2,
-              overflow: 'hidden'
+              overflow: 'hidden',
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              border: '1px solid',
+              borderColor: 'divider'
             }}
           >
             <Box
@@ -114,11 +152,16 @@ export function MainContent({
                 {selectedDomain ? `当前筛选: ${selectedDomain}` : '显示所有规则'}
               </Typography>
             </Box>
-            <RuleList
-              rules={rules}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
+            <ScrollableBox sx={{
+              flex: 1,
+              overflow: 'auto'
+            }}>
+              <RuleList
+                rules={rules}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            </ScrollableBox>
           </Paper>
         </Box>
       </Box>
