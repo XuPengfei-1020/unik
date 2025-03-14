@@ -67,9 +67,12 @@ export function App() {
 
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
+      console.log(rule);
       return (
         rule.domain.toLowerCase().includes(searchLower) ||
         (Array.isArray(rule.tags) && rule.tags.some(tag => tag.toLowerCase().includes(searchLower))) ||
+        (rule.matchRules?.urlPattern?.pattern || '').toLowerCase().includes(searchLower) ||
+        (rule.matchRules?.titlePattern?.pattern || '').toLowerCase().includes(searchLower) ||
         (rule.applyRules?.fixedTitle || '').toLowerCase().includes(searchLower) ||
         (rule.applyRules?.titleScript || '').toLowerCase().includes(searchLower)
       );
