@@ -504,7 +504,6 @@ button[type="button"]:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-top: 8px;
 }
 
 .rule-section {

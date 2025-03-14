@@ -23,6 +23,31 @@ import {
   Label as LabelIcon,
   Info as InfoIcon
 } from '@mui/icons-material';
+import {
+  RegexIcon,
+  CaseSensitiveIcon,
+  WholeWordIcon
+} from './icons';
+import { styled } from '@mui/material/styles';
+
+// 添加新的样式组件
+const IconGroup = styled('div')({
+  display: 'flex',
+  gap: '2px',
+  alignItems: 'center'
+});
+
+const IconWrapper = styled('div')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '2px',
+  borderRadius: '4px',
+  backgroundColor: 'rgba(25, 118, 210, 0.12)',
+  color: '#1976d2',
+  marginLeft: '0.5em',
+  fontSize: '0.8em'
+}));
 
 function RuleCard({ rule, onEdit, onDelete }) {
   // 确保 tags 是数组
@@ -31,22 +56,23 @@ function RuleCard({ rule, onEdit, onDelete }) {
   return (
     <Card
       sx={{
-        mb: 2,
+        mb: 1.5,
         width: '100%',
         overflow: 'visible'
       }}
       className="MuiCard-root"
     >
-      <CardContent className="rule-card-content">
-        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
+      <CardContent className="rule-card-content" sx={{ py: 1.5 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
           <Typography
             variant="h6"
             component="div"
             className="rule-domain"
+            sx={{ fontSize: '1rem' }}
           >
             {rule.domain}
           </Typography>
-          <Box className="rule-tags-container">
+          <Box className="rule-tags-container" sx={{ display: 'flex', alignItems: 'center' }}>
             {tags.map((tag, index) => (
               <Chip
                 key={index}
@@ -56,125 +82,113 @@ function RuleCard({ rule, onEdit, onDelete }) {
                 sx={{
                   backgroundColor: 'rgba(25, 118, 210, 0.08)',
                   color: 'primary.main',
-                  fontWeight: 500
+                  fontWeight: 500,
+                  height: '20px',
+                  '& .MuiChip-label': {
+                    px: 1
+                  }
                 }}
               />
             ))}
           </Box>
         </Box>
 
-        <Box className="rule-section">
-          <Typography
-            variant="subtitle2"
-            className="rule-section-title"
-          >
-            <FilterAltIcon fontSize="small" />
-            匹配条件
-          </Typography>
-
+        <Box className="rule-section" sx={{ mb: 1 }}>
           {rule.matchRules.titlePattern?.pattern && (
-            <Box mb={1.5}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                标题匹配:
+            <Box mb={1}>
+              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+                <Box component="span" sx={{ color: 'rgba(0, 0, 0, 0.4)' }}>
+                  当原标题包含：
+                </Box>
+                <Box component="span" sx={{ ml: 1, color: 'text.primary' }}>
+                  {rule.matchRules.titlePattern.pattern}
+                </Box>
+                <IconGroup>
+                  {rule.matchRules.titlePattern.isRegex && (
+                    <Tooltip title="使用正则表达式">
+                      <IconWrapper>
+                        <RegexIcon />
+                      </IconWrapper>
+                    </Tooltip>
+                  )}
+                  {rule.matchRules.titlePattern.caseSensitive && (
+                    <Tooltip title="区分大小写">
+                      <IconWrapper>
+                        <CaseSensitiveIcon />
+                      </IconWrapper>
+                    </Tooltip>
+                  )}
+                  {rule.matchRules.titlePattern.wholeWord && (
+                    <Tooltip title="完整匹配">
+                      <IconWrapper>
+                        <WholeWordIcon />
+                      </IconWrapper>
+                    </Tooltip>
+                  )}
+                </IconGroup>
               </Typography>
-              <Box className="rule-pattern">
-                {rule.matchRules.titlePattern.pattern}
-              </Box>
-              <Box className="rule-pattern-options">
-                {rule.matchRules.titlePattern.isRegex && (
-                  <Chip
-                    label="正则"
-                    size="small"
-                    sx={{
-                      backgroundColor: 'rgba(76, 175, 80, 0.08)',
-                      color: 'success.main'
-                    }}
-                  />
-                )}
-                {rule.matchRules.titlePattern.caseSensitive && (
-                  <Chip
-                    label="区分大小写"
-                    size="small"
-                    sx={{
-                      backgroundColor: 'rgba(255, 152, 0, 0.08)',
-                      color: 'warning.main'
-                    }}
-                  />
-                )}
-                {rule.matchRules.titlePattern.wholeWord && (
-                  <Chip
-                    label="完整匹配"
-                    size="small"
-                    sx={{
-                      backgroundColor: 'rgba(33, 150, 243, 0.08)',
-                      color: 'info.main'
-                    }}
-                  />
-                )}
-              </Box>
             </Box>
           )}
 
           {rule.matchRules.urlPattern?.pattern && (
             <Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                URL匹配:
+              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+                <Box component="span" sx={{ color: 'rgba(0, 0, 0, 0.4)' }}>
+                  当网址URL包含：
+                </Box>
+                <Box component="span" sx={{ ml: 1, color: 'text.primary' }}>
+                  {rule.matchRules.urlPattern.pattern}
+                </Box>
+                <IconGroup>
+                  {rule.matchRules.urlPattern.isRegex && (
+                    <Tooltip title="使用正则表达式">
+                      <IconWrapper>
+                        <RegexIcon />
+                      </IconWrapper>
+                    </Tooltip>
+                  )}
+                  {rule.matchRules.urlPattern.caseSensitive && (
+                    <Tooltip title="区分大小写">
+                      <IconWrapper>
+                        <CaseSensitiveIcon />
+                      </IconWrapper>
+                    </Tooltip>
+                  )}
+                  {rule.matchRules.urlPattern.wholeWord && (
+                    <Tooltip title="完整匹配">
+                      <IconWrapper>
+                        <WholeWordIcon />
+                      </IconWrapper>
+                    </Tooltip>
+                  )}
+                </IconGroup>
               </Typography>
-              <Box className="rule-pattern">
-                {rule.matchRules.urlPattern.pattern}
-              </Box>
-              <Box className="rule-pattern-options">
-                {rule.matchRules.urlPattern.isRegex && (
-                  <Chip
-                    label="正则"
-                    size="small"
-                    sx={{
-                      backgroundColor: 'rgba(76, 175, 80, 0.08)',
-                      color: 'success.main'
-                    }}
-                  />
-                )}
-                {rule.matchRules.urlPattern.caseSensitive && (
-                  <Chip
-                    label="区分大小写"
-                    size="small"
-                    sx={{
-                      backgroundColor: 'rgba(255, 152, 0, 0.08)',
-                      color: 'warning.main'
-                    }}
-                  />
-                )}
-                {rule.matchRules.urlPattern.wholeWord && (
-                  <Chip
-                    label="完整匹配"
-                    size="small"
-                    sx={{
-                      backgroundColor: 'rgba(33, 150, 243, 0.08)',
-                      color: 'info.main'
-                    }}
-                  />
-                )}
-              </Box>
             </Box>
           )}
         </Box>
 
         <Box className="rule-section">
-          <Typography
-            variant="subtitle2"
-            className="rule-section-title"
-          >
+          <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
             {rule.applyRules.titleScript ? (
-              <CodeIcon fontSize="small" />
+              <>
+                <Box component="span" sx={{ color: 'rgba(0, 0, 0, 0.4)' }}>
+                  则执行 Javascript 生成网址标题：
+                </Box>
+                <CodeIcon fontSize="small" sx={{ ml: 0.5, color: 'info.main' }} />
+              </>
             ) : (
-              <TitleIcon fontSize="small" />
+              <>
+                <Box component="span" sx={{ color: 'rgba(0, 0, 0, 0.4)' }}>
+                  则把网址标题改为：
+                </Box>
+                <TitleIcon fontSize="small" sx={{ ml: 0.5, color: 'success.main' }} />
+              </>
             )}
-            应用规则
           </Typography>
-
           <Box
             className="rule-pattern"
             sx={{
+              mt: 0.5,
               backgroundColor: rule.applyRules.titleScript
                 ? 'rgba(33, 150, 243, 0.05)'
                 : 'rgba(76, 175, 80, 0.05)',
@@ -182,6 +196,11 @@ function RuleCard({ rule, onEdit, onDelete }) {
               borderColor: rule.applyRules.titleScript
                 ? 'info.main'
                 : 'success.main',
+              p: 1,
+              borderRadius: '0 4px 4px 0',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+              fontFamily: 'monospace'
             }}
           >
             {rule.applyRules.fixedTitle || rule.applyRules.titleScript}
@@ -191,14 +210,14 @@ function RuleCard({ rule, onEdit, onDelete }) {
 
       <Divider />
 
-      <CardActions sx={{ justifyContent: 'flex-end', p: 1 }}>
+      <CardActions sx={{ justifyContent: 'flex-end', p: 0.5 }}>
         <Tooltip title="编辑规则">
           <IconButton
             onClick={() => onEdit(rule)}
             size="small"
             color="primary"
             sx={{
-              mr: 1,
+              mr: 0.5,
               '&:hover': {
                 backgroundColor: 'rgba(25, 118, 210, 0.08)'
               }
