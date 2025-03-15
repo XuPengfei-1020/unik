@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { resolve, dirname, basename, relative } from 'path';
 import fs from 'fs';
 import { globSync } from 'glob';
+import * as esbuild from 'esbuild';
 
 // 通用配置
 const commonConfig = {
@@ -107,6 +108,33 @@ export default defineConfig(({ command, mode }) => {
       // 如果有其他类型的文件也需要复制，可以在这里添加
       // 例如：复制字体文件
       // copyFiles('src/assets/fonts/*.*', 'assets/fonts');
+    }
+  });
+
+  // 添加插件来处理background
+  config.plugins.push({
+    name: 'build-background',
+    closeBundle: async () => {
+      try {
+        // 确保background目录存在
+        if (!fs.existsSync('dist/background')) {
+          fs.mkdirSync('dist/background', { recursive: true });
+        }
+
+        // 使用esbuild打包background.js
+        await esbuild.build({
+          entryPoints: [resolve(__dirname, 'src/background/background.js')],
+          bundle: true,
+          outfile: 'dist/background/background.js',
+          format: 'esm',
+          platform: 'browser',
+          target: ['chrome58', 'firefox57'],
+          minify: mode === 'production'
+        });
+        console.log('✅ Background bundle created successfully');
+      } catch (error) {
+        console.error('❌ Error bundling background:', error);
+      }
     }
   });
 

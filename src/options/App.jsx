@@ -3,7 +3,7 @@ import { CircularProgress, Alert, Snackbar, Box } from '@mui/material';
 import { AppLayout } from './components/layout/AppLayout';
 import { MainContent } from './components/layout/MainContent';
 import { RuleForm } from './components/rules/RuleForm';
-import { useRules } from './hooks/useRules';
+import useRuleData from './hooks/useRuleData';
 
 export function App() {
   const {
@@ -14,7 +14,7 @@ export function App() {
     deleteRule,
     getDomains,
     toggleRuleEnabled
-  } = useRules();
+  } = useRuleData();
 
   const [selectedDomain, setSelectedDomain] = useState('');
   const [searchTerm, setSearchTerm] = useState('');

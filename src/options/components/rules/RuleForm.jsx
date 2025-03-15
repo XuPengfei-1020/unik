@@ -8,7 +8,6 @@ import {
   styled
 } from '@mui/material';
 import { RuleFormContent, defaultRule } from './RuleFormContent';
-import { TitleRule } from '../../../models/Rule';
 
 // 自定义样式组件
 const StyledDialogTitle = styled(DialogTitle)(({ theme }) => ({
@@ -23,7 +22,7 @@ const StyledDialogTitle = styled(DialogTitle)(({ theme }) => ({
 }));
 
 export function RuleForm({ open, rule, onSave, onClose, existingTags = [] }) {
-  const [currentRule, setCurrentRule] = useState(null);
+  const [currentRule, setCurrentRule] = useState(rule);
   const [error, setError] = useState(null);
 
   const handleRuleChange = (updatedRule) => {
@@ -34,7 +33,10 @@ export function RuleForm({ open, rule, onSave, onClose, existingTags = [] }) {
     e.preventDefault();
     setError(null);
 
-    if (!currentRule) return;
+    if (!currentRule) {
+      onClose();
+      return;
+    }
 
     const validation = currentRule.validate();
     if (!validation.isValid) {

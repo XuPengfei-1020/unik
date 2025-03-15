@@ -52,7 +52,7 @@ function Popup() {
 
           // 获取当前标签页的规则
           const response = await new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage({ type: 'GET_TAB_RULE', tabId: tab.id }, (response) => {
+            chrome.runtime.sendMessage({ type: 'GET_CURRENT_RULE_OF_TAB', tabId: tab.id }, (response) => {
               const error = chrome.runtime.lastError;
               if (error) {
                 console.error('发送消息时出错:', error, JSON.stringify(error));

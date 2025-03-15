@@ -17,9 +17,7 @@ import {
 import {
   RegexIcon,
   CaseSensitiveIcon,
-  WholeWordIcon,
-  CodeIcon,
-  TitleIcon
+  WholeWordIcon
 } from '../icons';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import LoopIcon from '@mui/icons-material/Loop';
@@ -156,63 +154,47 @@ export function RuleFormContent({
   rule,
   onChange,
   error,
-  existingTags = [],
   formId = "rule-form",
-  onToggleEnabled,
-  isPopup = false
+  showDomainInputField = true
 }) {
-  const [formData, setFormData] = useState(rule || defaultRule);
-  const [useScript, setUseScript] = useState(false);
-  const [useInterval, setUseInterval] = useState(false);
+  // 内部表单状态
+  const [formData, setFormData] = useState(rule ? {...rule} : {...defaultRule});
 
+  // 内部UI状态
+  const [useScript, setUseScript] = useState(!!formData.applyRules?.titleScript);
+  const [useInterval, setUseInterval] = useState(formData.applyRules?.interval > 0);
+
+  // 当外部rule变化时，更新内部状态
   useEffect(() => {
     if (rule) {
-      setFormData(rule);
-      setUseScript(!!rule.applyRules.titleScript);
-      setUseInterval(rule.applyRules.interval > 0);
-    } else {
-      setFormData(defaultRule);
-      setUseScript(false);
-      setUseInterval(false);
+      setFormData({...rule});
+      setUseScript(!!rule.applyRules?.titleScript);
+      setUseInterval(rule.applyRules?.interval > 0);
     }
   }, [rule]);
 
-  useEffect(() => {
-    // 当表单数据变化时，通知父组件
-    const finalRule = new TitleRule({
-      ...formData,
-      applyRules: {
-        ...formData.applyRules,
-        fixedTitle: useScript ? '' : (formData.applyRules.fixedTitle || ''),
-        titleScript: useScript ? (formData.applyRules.titleScript || '') : null,
-        interval: useInterval ? formData.applyRules.interval : 0
-      }
-    });
+  // 更新表单数据并通知父组件
+  const updateFormData = (newData) => {
+    const updatedData = {...newData};
+    setFormData(updatedData);
+    onChange?.(new TitleRule(updatedData));
+  };
 
-    // 只在规则实际发生变化时才通知父组件
-    const currentRuleStr = JSON.stringify(formData);
-    const finalRuleStr = JSON.stringify(finalRule);
-    if (currentRuleStr !== finalRuleStr) {
-      onChange?.(finalRule);
-    }
-  }, [formData, useScript, useInterval]);
-
+  // 处理匹配选项变更
   const handlePatternOptionsChange = (pattern, option) => {
-    setFormData(prev => {
-      const newData = {
-        ...prev,
-        matchRules: {
-          ...prev.matchRules,
-          [pattern]: {
-            ...prev.matchRules[pattern],
-            [option]: !prev.matchRules[pattern][option]
-          }
+    updateFormData({
+      ...formData,
+      matchRules: {
+        ...formData.matchRules,
+        [pattern]: {
+          ...formData.matchRules[pattern],
+          [option]: !formData.matchRules[pattern][option]
         }
-      };
-      return newData;
+      }
     });
   };
 
+  // 渲染匹配选项
   const renderMatchOptions = (pattern) => (
     <InputAdornment position="end">
       <IconGroup>
@@ -230,36 +212,34 @@ export function RuleFormContent({
     </InputAdornment>
   );
 
-  // 处理 JavaScript switch 切换
-  const handleScriptToggle = (e) => {
-    const newUseScript = e.target.checked;
-    setUseScript(newUseScript);
+  // 处理脚本切换
+  const handleScriptToggle = (checked) => {
+    setUseScript(checked);
 
-    // 根据是否为编辑模式（是否有原始规则）来处理
-    setFormData(prev => {
-      if (rule) {
-        // 编辑模式：切换时使用原始规则中的值
-        return {
-          ...prev,
-          applyRules: {
-            ...prev.applyRules,
-            fixedTitle: newUseScript ? '' : (rule.applyRules.fixedTitle || ''),
-            titleScript: newUseScript ? (rule.applyRules.titleScript || '') : null
-          }
-        };
-      } else {
-        // 新增模式：切换时清空输入
-        return {
-          ...prev,
-          applyRules: {
-            ...prev.applyRules,
-            fixedTitle: newUseScript ? '' : '',
-            titleScript: newUseScript ? '' : null
-          }
-        };
+    updateFormData({
+      ...formData,
+      applyRules: {
+        ...formData.applyRules,
+        fixedTitle: checked ? '' : (formData.applyRules.fixedTitle || ''),
+        titleScript: checked ? (formData.applyRules.titleScript || '') : null
       }
     });
   };
+
+  // 处理循环切换
+  const handleIntervalToggle = (checked) => {
+    setUseInterval(checked);
+
+    updateFormData({
+      ...formData,
+      applyRules: {
+        ...formData.applyRules,
+        interval: checked ? 1 : 0
+      }
+    });
+  };
+
+  if (!formData) return null;
 
   return (
     <Box id={formId}>
@@ -274,12 +254,15 @@ export function RuleFormContent({
       )}
 
       <Stack spacing={3} sx={{ pt: 1 }}>
-        {/* 域名输入框 - 只在 options 页面显示 */}
-        {!isPopup && (
+        {/* 域名输入框 - 根据showDomainInputField决定是否显示 */}
+        {showDomainInputField && (
           <StyledTextField
             label="生效域名"
             value={formData.domain}
-            onChange={e => setFormData(prev => ({ ...prev, domain: e.target.value }))}
+            onChange={e => updateFormData({
+              ...formData,
+              domain: e.target.value
+            })}
             required
             fullWidth
             placeholder="例如：example.com"
@@ -291,9 +274,12 @@ export function RuleFormContent({
           <Autocomplete
             multiple
             freeSolo
-            options={existingTags}
+            options={formData.tags || []}
             value={formData.tags}
-            onChange={(e, newValue) => setFormData(prev => ({ ...prev, tags: newValue }))}
+            onChange={(e, newValue) => updateFormData({
+              ...formData,
+              tags: newValue
+            })}
             renderTags={(value, getTagProps) =>
               value.map((option, index) => (
                 <Chip
@@ -332,16 +318,16 @@ export function RuleFormContent({
           }
           fullWidth
           value={formData.matchRules.titlePattern.pattern}
-          onChange={e => setFormData(prev => ({
-            ...prev,
+          onChange={e => updateFormData({
+            ...formData,
             matchRules: {
-              ...prev.matchRules,
+              ...formData.matchRules,
               titlePattern: {
-                ...prev.matchRules.titlePattern,
+                ...formData.matchRules.titlePattern,
                 pattern: e.target.value
               }
             }
-          }))}
+          })}
           InputProps={{
             endAdornment: renderMatchOptions('titlePattern')
           }}
@@ -359,16 +345,16 @@ export function RuleFormContent({
           }
           fullWidth
           value={formData.matchRules.urlPattern.pattern}
-          onChange={e => setFormData(prev => ({
-            ...prev,
+          onChange={e => updateFormData({
+            ...formData,
             matchRules: {
-              ...prev.matchRules,
+              ...formData.matchRules,
               urlPattern: {
-                ...prev.matchRules.urlPattern,
+                ...formData.matchRules.urlPattern,
                 pattern: e.target.value
               }
             }
-          }))}
+          })}
           InputProps={{
             endAdornment: renderMatchOptions('urlPattern')
           }}
@@ -402,7 +388,7 @@ export function RuleFormContent({
                   control={
                     <StyledSwitch
                       checked={useScript}
-                      onChange={handleScriptToggle}
+                      onChange={(e) => handleScriptToggle(e.target.checked)}
                       size="small"
                     />
                   }
@@ -416,13 +402,13 @@ export function RuleFormContent({
             rows={useScript ? 4 : 1}
             placeholder={useScript ? "eg: (originalTitle) => originalTitle + '😊😊😊'" : "可以将标题替换为emoj哦，比如😊😊😊"}
             value={useScript ? (formData.applyRules.titleScript || '') : (formData.applyRules.fixedTitle || '')}
-            onChange={e => setFormData(prev => ({
-              ...prev,
+            onChange={e => updateFormData({
+              ...formData,
               applyRules: {
-                ...prev.applyRules,
+                ...formData.applyRules,
                 [useScript ? 'titleScript' : 'fixedTitle']: e.target.value || ''
               }
-            }))}
+            })}
           />
           {useScript && (
             <Box sx={{
@@ -452,26 +438,7 @@ export function RuleFormContent({
                 control={
                   <StyledSwitch
                     checked={useInterval}
-                    onChange={(e) => {
-                      setUseInterval(e.target.checked);
-                      if (!e.target.checked) {
-                        setFormData(prev => ({
-                          ...prev,
-                          applyRules: {
-                            ...prev.applyRules,
-                            interval: 0
-                          }
-                        }));
-                      } else {
-                        setFormData(prev => ({
-                          ...prev,
-                          applyRules: {
-                            ...prev.applyRules,
-                            interval: 1
-                          }
-                        }));
-                      }
-                    }}
+                    onChange={(e) => handleIntervalToggle(e.target.checked)}
                     size="small"
                   />
                 }
@@ -484,13 +451,13 @@ export function RuleFormContent({
                     value={formData.applyRules.interval}
                     onChange={e => {
                       const value = Math.max(1, Number(e.target.value));
-                      setFormData(prev => ({
-                        ...prev,
+                      updateFormData({
+                        ...formData,
                         applyRules: {
-                          ...prev.applyRules,
+                          ...formData.applyRules,
                           interval: value
                         }
-                      }));
+                      });
                     }}
                     InputProps={{
                       sx: { width: 100 }
