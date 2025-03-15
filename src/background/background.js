@@ -222,3 +222,33 @@ async function clearRule(tab) {
     console.error(`清除规则状态失败 [Tab ${tab.id}]:`, e);
   }
 }
+
+// 监听来自 popup 的消息
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'GET_TAB_RULE') {
+    try {
+      // 获取当前标签页的规则
+      const tabId = message.tabId || sender.tab?.id;
+      if (!tabId) {
+        console.debug('无法获取标签页ID');
+        sendResponse({ error: '无法获取标签页ID' });
+        return true;
+      }
+
+      const rule = tabRuleMap.get(tabId);
+      console.debug(`获取标签页 ${tabId} 的规则:`, rule);
+
+      // 如果找到规则，确保它是一个普通对象而不是类实例
+      if (rule) {
+        const ruleObj = typeof rule.toJSON === 'function' ? rule.toJSON() : rule;
+        sendResponse({ data: ruleObj });
+      } else {
+        sendResponse({ data: null });
+      }
+    } catch (error) {
+      console.error('处理消息时出错:', error);
+      sendResponse({ error: error.message || '获取规则失败' });
+    }
+    return true; // 保持消息通道开放
+  }
+});

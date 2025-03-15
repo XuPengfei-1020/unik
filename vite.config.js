@@ -16,7 +16,7 @@ const commonConfig = {
     rollupOptions: {
       input: {
         options: resolve(__dirname, 'src/options/index.jsx'),
-        popup: resolve(__dirname, 'src/options/popup/popup.js'),
+        popup: resolve(__dirname, 'src/options/popup/popup.jsx'),
         background: resolve(__dirname, 'src/background/background.js')
       },
       output: {
@@ -38,6 +38,11 @@ const commonConfig = {
           return 'assets/[name].[ext]';
         }
       }
+    }
+  },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src')
     }
   }
 };

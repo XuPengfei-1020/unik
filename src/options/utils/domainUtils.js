@@ -6,9 +6,17 @@ export function isValidDomain(domain) {
   return domainRegex.test(domain);
 }
 
+// 缓存已获取的域名图标
+const domainIconCache = new Map();
+
 // 获取域名图标
 export async function getDomainIcon(domain) {
   if (!isValidDomain(domain)) return null;
+
+  // 检查缓存
+  if (domainIconCache.has(domain)) {
+    return domainIconCache.get(domain);
+  }
 
   // 设置超时时间为 2 秒
   const controller = new AbortController();
@@ -24,17 +32,21 @@ export async function getDomainIcon(domain) {
     clearTimeout(timeoutId);
 
     if (response.ok) {
-      return `https://${domain}/favicon.ico`;
+      const iconUrl = `https://${domain}/favicon.ico`;
+      domainIconCache.set(domain, iconUrl);
+      return iconUrl;
     }
   } catch (error) {
     // 如果获取失败，尝试使用 Google 的 favicon 服务
     try {
-      const response = await fetch(`https://www.google.com/s2/favicons?domain=${domain}&sz=32`, {
+      const googleIconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+      const response = await fetch(googleIconUrl, {
         signal: controller.signal
       });
 
       if (response.ok) {
-        return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+        domainIconCache.set(domain, googleIconUrl);
+        return googleIconUrl;
       }
     } catch (error) {
       console.debug('Failed to fetch domain icon:', error);
@@ -43,6 +55,8 @@ export async function getDomainIcon(domain) {
     clearTimeout(timeoutId);
   }
 
+  // 如果获取失败，缓存 null 值以避免重复请求
+  domainIconCache.set(domain, null);
   return null;
 }
 

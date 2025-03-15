@@ -16,7 +16,7 @@ export function useStorage(key, defaultValue) {
         console.error('Failed to load data:', err);
       } finally {
         setLoading(false);
-      }
+      }  
     };
 
     loadData();
