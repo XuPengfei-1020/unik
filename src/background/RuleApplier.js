@@ -126,6 +126,7 @@ class RuleApplier {
       // 获取window的原始标题
       const originalTitle = (await chrome.scripting.executeScript({
         target: { tabId },
+        world: 'MAIN',
         func: () => window._originalTabTitle || window.document.title
       }))[0].result;
       // 找到第一个匹配的规则

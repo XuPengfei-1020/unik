@@ -4,12 +4,10 @@ import {
   ListItemButton,
   ListItemText,
   ListItemIcon,
-  Paper,
   Typography,
   Divider,
   Badge,
   Box,
-  Tooltip
 } from '@mui/material';
 import {
   Language as LanguageIcon,
@@ -19,7 +17,7 @@ import {
 import { useEffect, useState } from 'react';
 import { getDomainIcon, sortDomains } from '../../utils/domainUtils';
 
-export function DomainList({ domains, selectedDomain, onDomainSelect }) {
+export function DomainList({ rules, domains, selectedDomain, onDomainSelect }) {
   const [domainIcons, setDomainIcons] = useState({});
   const sortedDomains = sortDomains(domains);
 
@@ -65,10 +63,10 @@ export function DomainList({ domains, selectedDomain, onDomainSelect }) {
                     fontWeight: !selectedDomain ? 500 : 400
                   }}
                 >
-                  所有域名
+                  所有规则
                 </Typography>
                 <Badge
-                  badgeContent={domains.length}
+                  badgeContent={rules.length}
                   color="primary"
                   sx={{ ml: 1 }}
                   size="small"
@@ -79,7 +77,7 @@ export function DomainList({ domains, selectedDomain, onDomainSelect }) {
         </ListItemButton>
       </ListItem>
 
-      {domains.length > 0 && <Divider sx={{ my: 1 }} />}
+      {rules.length > 0 && <Divider sx={{ my: 1 }} />}
 
       {sortedDomains.map((domain) => (
         <ListItem key={domain} disablePadding>

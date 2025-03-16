@@ -10,16 +10,13 @@ import {
 } from '@mui/material';
 import { RuleFormContent } from '../components/rules/RuleFormContent';
 import { TitleRule } from '../../models/Rule';
+import RuleService from '../../services/RuleService';
 
 function Popup() {
-  const [currentTab, setCurrentTab] = useState(null);
   const [tabRule, setTabRule] = useState(null);
-  const [originalTitle, setOriginalTitle] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentRule, setCurrentRule] = useState(null);
-  const [existingTags, setExistingTags] = useState([]);
-  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
 
   useEffect(() => {
@@ -28,53 +25,29 @@ function Popup() {
         // 获取当前标签页信息
         const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
         if (!tabs || tabs.length === 0) {
-          throw new Error('无法获取当前标签页');
+          chrome.runtime.openOptionsPage();
         }
         const tab = tabs[0];
         if (!tab.url || !(tab.url.startsWith('http://') || tab.url.startsWith('https://'))) {
-          setError('当前页面不支持修改标题');
+          chrome.runtime.openOptionsPage();
           return;
         }
 
-        setCurrentTab(tab);
-
         // 获取当前标签页的规则状态
         try {
-          // 获取原始标题
-          const titleResult = await chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            world: 'MAIN',
-            func: () => window._originalTabTitle || document.title
-          });
-          const title = titleResult[0].result;
-          console.debug('获取到的原始标题:', title);
-          setOriginalTitle(title);
-
           // 获取当前标签页的规则
-          const response = await new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage({ type: 'GET_CURRENT_RULE_OF_TAB', tabId: tab.id }, (response) => {
-              const error = chrome.runtime.lastError;
-              if (error) {
-                console.error('发送消息时出错:', error, JSON.stringify(error));
-                reject(new Error(error.message || '无法获取规则状态'));
-              } else if (response.error) {
-                reject(new Error(response.error));
-              } else {
-                resolve(response.data);
-              }
-            });
-          });
+          const rule = await RuleService.getTabRule(tab.id);
+          console.debug('获取到当前页面的规则:', rule);
 
-          console.debug('获取到的响应:', response);
-
-          if (response) {
+          if (rule) {
             // 如果有规则，进入编辑模式
-            console.debug('转换规则为 TitleRule:', response);
-            const titleRule = TitleRule.fromJSON(response);
+            console.debug('转换规则为 TitleRule:', rule);
+            const titleRule = TitleRule.fromJSON(rule);
             setTabRule(titleRule);
             setCurrentRule(titleRule);
           } else {
             // 如果没有规则，创建一个默认规则
+            const title = tab.title;
             console.debug('创建默认规则，使用标题:', title);
             const defaultRule = new TitleRule({
               id: crypto.randomUUID(),
@@ -110,22 +83,6 @@ function Popup() {
           setError(`获取规则失败: ${err.message}`);
           setTabRule(null);
         }
-
-        // 获取所有已有标签
-        try {
-          const data = await chrome.storage.sync.get('titleRules');
-          const allTags = data.titleRules?.reduce((tags, rule) => {
-            rule.tags?.forEach(tag => {
-              if (!tags.includes(tag)) {
-                tags.push(tag);
-              }
-            });
-            return tags;
-          }, []) || [];
-          setExistingTags(allTags);
-        } catch (err) {
-          console.error('获取标签时出错:', err);
-        }
       } catch (err) {
         console.error('初始化 popup 时出错:', err);
         setError(err.message || '加载失败，请刷新页面重试');
@@ -138,12 +95,9 @@ function Popup() {
   }, []);
 
   const handleRuleChange = (rule) => {
-    console.debug('规则变更:', rule);
     if (!rule) return;
-
     // 确保传入的是 TitleRule 实例
-    const titleRule = rule instanceof TitleRule ? rule : TitleRule.fromJSON(rule);
-    setCurrentRule(titleRule);
+    setCurrentRule(TitleRule.fromJSON(rule));
   };
 
   const handleSaveRule = async (e) => {
@@ -155,76 +109,26 @@ function Popup() {
     }
 
     try {
-      setSaving(true);
-      console.group('保存规则');
-      console.debug('当前规则对象:', currentRule);
-
-      // 确保currentRule是TitleRule实例
-      const ruleToSave = currentRule instanceof TitleRule
-        ? currentRule
-        : TitleRule.fromJSON(currentRule);
-
-      console.debug('验证规则...');
-      const validation = ruleToSave.validate();
+      // 验证规则
+      const validation = currentRule.validate();
       if (!validation.isValid) {
-        console.error('规则验证失败:', validation.error);
         setMessage({ type: 'error', text: validation.error });
         return;
       }
 
-      console.debug('开始保存规则...');
-
-      // 直接使用chrome.storage.sync保存
-      const data = await chrome.storage.sync.get('titleRules');
-      const rules = data.titleRules || [];
-
-      // 查找是否存在相同ID的规则
-      const index = rules.findIndex(r => r.id === ruleToSave.id);
-      const ruleJSON = ruleToSave.toJSON();
-
-      let newRules;
-      if (index !== -1) {
-        console.debug(`更新现有规则，索引位置: ${index}`);
-        newRules = [
-          ...rules.slice(0, index),
-          ruleJSON,
-          ...rules.slice(index + 1)
-        ];
-      } else {
-        console.debug('添加新规则');
-        newRules = [...rules, ruleJSON];
-      }
-
-      console.debug('保存规则列表:', newRules);
-      await chrome.storage.sync.set({ titleRules: newRules });
-
-      console.debug('规则保存成功');
+      // 使用RuleService保存规则
+      await RuleService.saveRule(currentRule);
 
       // 显示成功提示
       setMessage({ type: 'success', text: '规则保存成功' });
 
       // 如果是编辑模式，更新tabRule
       if (tabRule) {
-        setTabRule(ruleToSave);
-      }
-
-      // 通知background更新规则
-      try {
-        await chrome.runtime.sendMessage({
-          type: 'UPDATE_RULES',
-          data: { rules: newRules }
-        });
-        console.debug('已通知background更新规则');
-      } catch (msgErr) {
-        console.warn('通知background更新规则失败，但规则已保存:', msgErr);
+        setTabRule(currentRule);
       }
     } catch (err) {
       console.error('保存规则时出错:', err);
-      console.error('错误堆栈:', err.stack);
       setMessage({ type: 'error', text: err.message || '保存失败' });
-    } finally {
-      setSaving(false);
-      console.groupEnd();
     }
   };
 
@@ -241,60 +145,19 @@ function Popup() {
     if (!currentRule || !tabRule) return; // 只在编辑模式下生效
 
     try {
-      console.group('切换规则状态');
-      console.debug('当前规则:', currentRule);
-      console.debug(`切换状态为: ${enabled}`);
+      // 使用RuleService切换规则状态
+      const updatedRule = await RuleService.toggleRuleEnabled(currentRule.id, enabled);
 
-      // 确保currentRule是TitleRule实例
-      const ruleToUpdate = currentRule instanceof TitleRule
-        ? currentRule
-        : TitleRule.fromJSON(currentRule);
-
-      // 更新启用状态
-      ruleToUpdate.enabled = enabled;
-
-      // 直接使用chrome.storage.sync保存
-      const data = await chrome.storage.sync.get('titleRules');
-      const rules = data.titleRules || [];
-
-      // 查找并更新规则
-      const index = rules.findIndex(r => r.id === ruleToUpdate.id);
-      if (index === -1) {
-        throw new Error('找不到要更新的规则');
-      }
-
-      const ruleJSON = ruleToUpdate.toJSON();
-      const newRules = [
-        ...rules.slice(0, index),
-        ruleJSON,
-        ...rules.slice(index + 1)
-      ];
-
-      console.debug('保存规则列表:', newRules);
-      await chrome.storage.sync.set({ titleRules: newRules });
-
-      // 更新当前规则状态
-      setCurrentRule(ruleToUpdate);
-      setTabRule(ruleToUpdate);
-
-      console.debug('规则状态已更新');
-
-      // 通知background更新规则
-      try {
-        await chrome.runtime.sendMessage({
-          type: 'UPDATE_RULES',
-          data: { rules: newRules }
-        });
-        console.debug('已通知background更新规则');
-      } catch (msgErr) {
-        console.warn('通知background更新规则失败，但规则已保存:', msgErr);
+      if (updatedRule) {
+        // 更新当前规则状态
+        const titleRule = TitleRule.fromJSON(updatedRule);
+        setCurrentRule(titleRule);
+        setTabRule(titleRule);
+        setMessage({ type: 'success', text: `规则已${enabled ? '启用' : '禁用'}` });
       }
     } catch (err) {
       console.error('切换规则状态时出错:', err);
-      console.error('错误堆栈:', err.stack);
-      setMessage({ type: 'error', text: err.message || '保存失败' });
-    } finally {
-      console.groupEnd();
+      setMessage({ type: 'error', text: err.message || '操作失败' });
     }
   };
 
@@ -400,10 +263,8 @@ function Popup() {
           <RuleFormContent
             rule={currentRule}
             onChange={handleRuleChange}
-            existingTags={existingTags}
             formId="popup-rule-form"
-            isPopup={true}
-            onToggleEnabled={handleToggleEnabled}
+            showDomainInputField={false}
           />
         </Box>
 
@@ -437,16 +298,12 @@ function Popup() {
             <Button
               onClick={handleSaveRule}
               variant="contained"
-              disabled={saving}
               sx={{
                 minWidth: 100,
                 textTransform: 'none'
               }}
             >
-              {saving ? (
-                <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-              ) : null}
-              {saving ? '保存中' : '保存'}
+              保存
             </Button>
           </Box>
         </Box>

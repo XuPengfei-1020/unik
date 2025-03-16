@@ -90,6 +90,7 @@ export function MainContent({
               pt: 1
             }}>
               <DomainList
+                rules={rules}
                 domains={domains}
                 selectedDomain={selectedDomain}
                 onDomainSelect={onDomainSelect}

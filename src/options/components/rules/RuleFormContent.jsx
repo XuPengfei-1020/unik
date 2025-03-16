@@ -164,15 +164,6 @@ export function RuleFormContent({
   const [useScript, setUseScript] = useState(!!formData.applyRules?.titleScript);
   const [useInterval, setUseInterval] = useState(formData.applyRules?.interval > 0);
 
-  // 当外部rule变化时，更新内部状态
-  useEffect(() => {
-    if (rule) {
-      setFormData({...rule});
-      setUseScript(!!rule.applyRules?.titleScript);
-      setUseInterval(rule.applyRules?.interval > 0);
-    }
-  }, [rule]);
-
   // 更新表单数据并通知父组件
   const updateFormData = (newData) => {
     const updatedData = {...newData};
